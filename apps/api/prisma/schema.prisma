@@ -1,0 +1,1312 @@
+// Delivery Platform — Prisma schema
+// PostgreSQL + PostGIS (geography columns are declared as Unsupported and
+// indexed via raw SQL in migrations — see prisma/migrations/postgis.sql)
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis]
+}
+
+// ──────────────────────────────────────────────────────────────
+// Enums
+// ──────────────────────────────────────────────────────────────
+
+enum UserRole {
+  CUSTOMER
+  CAPTAIN
+  MERCHANT // مستخدم تابع لفرع مطعم
+  COMPANY // مستخدم تابع لشركة أسطول توصيل — بيشوف/يدير مناديبها بس
+  ADMIN
+}
+
+enum CompanyStatus {
+  ACTIVE
+  SUSPENDED // موقوفة — مناديبها ما ياخدوش طلبات
+}
+
+enum MerchantRole {
+  BRANCH_MANAGER // مدير فرع
+  CASHIER // كاشير
+}
+
+enum RestaurantStatus {
+  OPEN // مفتوح
+  BUSY // مشغول — وقت التحضير بيزيد تلقائياً
+  PAUSED // مغلق مؤقتاً (بقرار من المطعم)
+  CLOSED // خارج أوقات العمل
+}
+
+enum OrderStatus {
+  PENDING // وارد للمطعم — لسه ما اتقبلش (عداد زمني + صوت تنبيه)
+  ACCEPTED // المطعم قبل + حدّد وقت التحضير
+  PREPARING // قيد التحضير
+  READY // جاهز للاستلام
+  CAPTAIN_ASSIGNED // كابتن متعيّن وفي طريقه للمطعم
+  PICKED_UP // الكابتن استلم الطلب
+  ON_THE_WAY // في الطريق للعميل
+  DELIVERED // تم التسليم
+  REJECTED // المطعم رفض (بسبب إلزامي)
+  CANCELLED // ملغي (عميل / أدمن)
+}
+
+enum PaymentMethod {
+  CASH
+  MADA
+  APPLE_PAY
+  CARD
+  WALLET
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  /// اتسترد جزء من المبلغ — الطلب لسه محتسب مدفوع في التقارير بالباقي.
+  PARTIALLY_REFUNDED
+  REFUNDED
+}
+
+/// مين بيتحمّل تكلفة الاسترداد. مش تصنيف إداري — ده اللي بيحدد فلوس مين تتخصم.
+enum RefundLiability {
+  /// البيع ماتمّش أصلاً (إلغاء قبل التحضير) — مافيش طرف غلطان، وكل حاجة بترجع
+  /// زي ما كانت بما فيها العمولة.
+  NONE
+  /// خطأ المطعم (صنف ناقص، جودة، تأخير تحضير) — المطعم يتحمّل، والمنصة بترجّع
+  /// عمولتها على الجزء المسترد: ماينفعش تكسب عمولة على بيع اترد.
+  RESTAURANT
+  /// خطأ المنصة أو استرضاء عميل — المنصة تتحمّل بالكامل، المطعم بياخد مستحقه
+  /// كامل والعمولة زي ما هي.
+  PLATFORM
+  /// خطأ الكابتن (طلب ضايع أو اتأخر) — بيتخصم من محفظته بحركة في الدفتر،
+  /// والمطعم والعمولة مايتأثروش.
+  CAPTAIN
+}
+
+enum RefundStatus {
+  /// مبلغ كبير فوق الحد — محجوز مستني موافقة أدمن تاني (فصل المهام). لسه ماتنفّذش.
+  AWAITING_APPROVAL
+  /// اتسجّل ولسه ماتنفّذش — الكاش دايماً بيقف هنا لحد التسوية اليدوية.
+  PENDING
+  COMPLETED
+  FAILED
+  /// أدمن تاني رفض الموافقة — ما اتنفّذش ومابيحجزش من المتاح للاسترداد.
+  REJECTED
+}
+
+enum CaptainStatus {
+  OFFLINE
+  ONLINE // متاح
+  ON_TRIP // في مهمة
+}
+
+enum VehicleType {
+  MOTORCYCLE
+  CAR
+  BICYCLE
+}
+
+enum OptionGroupType {
+  SINGLE // اختيار واحد (حجم)
+  MULTI // اختيارات متعددة (إضافات)
+}
+
+enum ItemAvailability {
+  AVAILABLE
+  OUT_OF_STOCK_TODAY // موقوف حتى نهاية اليوم
+  OUT_OF_STOCK // موقوف دائم لحد ما يترجّع
+}
+
+/// حالة وثيقة الكابتن — بولياني `isApproved` مكنش بيسمح بـ«مرفوضة» ولا سبب الرفض.
+enum DocumentStatus {
+  PENDING // مرفوعة وتحت المراجعة
+  APPROVED
+  REJECTED
+  EXPIRED // انتهت صلاحيتها — بيتحدّد بمهمة دورية أو عند القراءة
+}
+
+/// نوع وثيقة التفعيل (اشتراطات هيئة النقل).
+enum DocumentType {
+  IDENTITY // الهوية / الإقامة
+  LICENSE // رخصة القيادة
+  VEHICLE_REG // استمارة المركبة
+  INSURANCE // التأمين
+  PHOTO // صورة شخصية
+}
+
+/// حالة ربط الكابتن بهيئة النقل (بطاقة التوصيل / التشغيل).
+enum TgaStatus {
+  NOT_LINKED // لسه ما اترفعتش بطاقة توصيل
+  PENDING // اترفعت البطاقة ومستنية تحقّق الهيئة
+  VERIFIED // الهيئة أكّدت البطاقة سارية
+  REJECTED // الهيئة رفضت — بيانات غلط أو بطاقة مش صالحة
+  EXPIRED // البطاقة انتهت — لازم تجديد
+}
+
+/// نتيجة فحص الوجه اليومي للمندوب.
+enum FaceCheckStatus {
+  PENDING // اترفعت السيلفي ومستنية المطابقة
+  VERIFIED // اتطابقت مع الوجه المرجعي
+  REJECTED // مش مطابقة — يتطلب إعادة أو مراجعة
+}
+
+/// حالة تذكرة الدعم — مطابقة لتبويبات اللوحة.
+enum TicketStatus {
+  OPEN // جديدة / مفتوحة
+  PENDING // ردّينا ومستنيين رد العميل
+  ESCALATED // مصعّدة لمستوى أعلى
+  CLOSED // اتحلّت واتقفلت
+}
+
+/// تصنيف الشكوى — بيوجّه الإسناد والتقارير.
+enum TicketCategory {
+  ORDER // مشكلة في الطلب (صنف ناقص/غلط)
+  PAYMENT // دفع أو استرداد
+  DELIVERY // التوصيل / التأخير
+  CAPTAIN // سلوك أو مشكلة كابتن
+  APP // مشكلة تقنية في التطبيق
+  OTHER // أخرى
+}
+
+enum TicketPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+/// مين باعت الرسالة في محادثة التذكرة.
+enum TicketSenderRole {
+  CUSTOMER // العميل صاحب التذكرة
+  AGENT // موظف الدعم (أدمن)
+  SYSTEM // رسالة نظام (تغيير حالة/إسناد)
+}
+
+/// نوع حركة المحفظة — كل حركة ليها مرجع وسبب.
+enum WalletEntryType {
+  TRIP_PAYOUT // أجرة رحلة
+  TIP // إكرامية
+  BONUS // مكافأة (ذروة مثلاً)
+  ADJUSTMENT // تسوية يدوية من الأدمن
+  WITHDRAWAL // سحب
+  WITHDRAWAL_REVERSAL // رجوع سحب مرفوض
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  TRANSFERRED
+}
+
+enum PayoutDestination {
+  BANK
+  STC_PAY
+}
+
+enum SettlementStatus {
+  PENDING
+  PROCESSING
+  TRANSFERRED
+}
+
+/// حالة توزيع الشركة على المندوب — الشركة بتدفع لمناديبها من تسويتها.
+enum DistributionStatus {
+  PENDING // لسه الشركة ما دفعتلوش
+  PAID // الشركة سجّلت إنها دفعتله
+}
+
+/// رد الكابتن على عرض المهمة — الأساس اللي بتتحسب منه نسبة القبول.
+enum TripOfferStatus {
+  OFFERED // اتعرض ولسه ما ردّش
+  ACCEPTED // قبل
+  REJECTED // رفض صراحةً
+  TIMEOUT // عدّت المهلة من غير رد
+}
+
+/// أنواع الإجراءات المسجّلة في سجل التدقيق — كلها إجراءات صلاحية بتحرّك فلوس
+/// أو بتغيّر حالة حساب. القراءة مش بتتسجّل، الكتابة بس.
+enum AuditAction {
+  REFUND_CREATE
+  REFUND_APPROVE
+  REFUND_REJECT
+  REFUND_SETTLE
+  REFUND_RETRY
+  SETTLEMENT_RUN
+  SETTLEMENT_TRANSFER
+  PAYOUT_ACCOUNT_SAVE
+  WITHDRAWAL_APPROVE
+  WITHDRAWAL_REJECT
+  DOCUMENT_REVIEW
+  TGA_LINK // ربط بطاقة توصيل هيئة النقل لكابتن
+  TGA_VERIFY // تشغيل تحقّق الهيئة (النتيجة في metadata)
+  TGA_UNLINK // فك الربط
+  STAFF_CREATE // إضافة موظف لوحة (أدمن)
+  STAFF_UPDATE // تعديل/تفعيل/تعطيل موظف
+  FACE_REVIEW // مراجعة أدمن لسيلفي التحقق اليومي (اعتماد/رفض)
+}
+
+// ──────────────────────────────────────────────────────────────
+// Users & Auth
+// ──────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(uuid())
+  phone        String   @unique
+  email        String?  @unique
+  passwordHash String?
+  fullName     String
+  role         UserRole
+  avatarUrl    String?
+  isActive     Boolean  @default(true)
+  fcmTokens    String[] @default([])
+  /// صلاحيات مفصّلة لموظف اللوحة (ADMIN). **فاضية = صلاحية كاملة** (سوبر أدمن —
+  /// السلوك الافتراضي القديم)؛ ولو فيها عناصر، الموظف مقصور عليها بالظبط.
+  /// الأسماء من كتالوج ثابت في `src/common/permissions.ts`.
+  permissions  String[] @default([])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  customer        Customer?
+  captain         Captain?
+  merchantsOf     MerchantUser[]
+  companiesOf     CompanyUser[]
+  refundsMade     Refund[]       @relation("RefundCreatedBy")
+  refundsApproved Refund[]       @relation("RefundApprovedBy")
+  auditLogs       AuditLog[]
+  assignedTickets SupportTicket[] @relation("TicketAssignee")
+
+  @@index([role])
+  @@map("users")
+}
+
+model OtpCode {
+  id        String   @id @default(uuid())
+  phone     String
+  code      String
+  expiresAt DateTime
+  consumed  Boolean  @default(false)
+  /// عدد محاولات التحقق الخاطئة على الرمز ده — بعد حدّ معيّن بنبطّله عشان
+  /// نمنع تخمين الرمز (٤ أرقام) حتى من عناوين IP مختلفة.
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([phone, code])
+  @@map("otp_codes")
+}
+
+// ──────────────────────────────────────────────────────────────
+// Customer
+// ──────────────────────────────────────────────────────────────
+
+model Customer {
+  id            String  @id @default(uuid())
+  userId        String  @unique
+  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  walletBalance Decimal @default(0) @db.Decimal(10, 2)
+
+  addresses Address[]
+  orders    Order[]
+  reviews   Review[]
+  favorites Favorite[]
+  tickets   SupportTicket[]
+
+  @@map("customers")
+}
+
+model Address {
+  id         String                                 @id @default(uuid())
+  customerId String
+  customer   Customer                               @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  label      String // البيت / الشغل
+  city       String
+  district   String?
+  street     String?
+  building   String?
+  notes      String? // ملاحظات للكابتن
+  // اختياري على مستوى Prisma فقط: أي عمود Unsupported إلزامي بيخلّي Prisma يشيل create()
+  // من الموديل خالص. بنكتبه بـ prisma.setPoint() بعد الإنشاء مباشرة في نفس المعاملة.
+  location   Unsupported("geography(Point, 4326)")?
+  isDefault  Boolean                                @default(false)
+  createdAt  DateTime                               @default(now())
+
+  orders Order[]
+
+  @@index([customerId])
+  @@map("addresses")
+}
+
+// ──────────────────────────────────────────────────────────────
+// Restaurant / Branch / Merchant users
+// ──────────────────────────────────────────────────────────────
+
+model Restaurant {
+  id             String   @id @default(uuid())
+  nameAr         String
+  nameEn         String
+  // نوع المطبخ اللي يظهر تحت اسم المطعم في تطبيق العميل: «برجر · أمريكي»
+  cuisineAr      String?
+  cuisineEn      String?
+  descriptionAr  String?
+  descriptionEn  String?
+  logoUrl        String?
+  coverUrl       String?
+  contactPhone   String?
+  commissionRate Decimal  @default(15) @db.Decimal(5, 2) // نسبة عمولة المنصة %
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  branches      Branch[]
+  categories    MenuCategory[]
+  settlements   Settlement[]
+  payoutAccount RestaurantPayoutAccount?
+
+  @@map("restaurants")
+}
+
+model Branch {
+  id               String                                 @id @default(uuid())
+  restaurantId     String
+  restaurant       Restaurant                             @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  nameAr           String
+  nameEn           String
+  city             String
+  address          String
+  // اختياري لنفس سبب Address.location — بيتحط بـ setPoint() بعد الإنشاء.
+  location         Unsupported("geography(Point, 4326)")?
+  deliveryRadiusKm Decimal                                @default(5) @db.Decimal(4, 1)
+  status           RestaurantStatus                       @default(CLOSED)
+  // Busy mode: دقايق تضاف تلقائياً لوقت التحضير لما الحالة BUSY
+  busyExtraMinutes Int                                    @default(15)
+  avgPrepMinutes   Int                                    @default(20)
+  // رسوم التوصيل والحد الأدنى لكل فرع — صفر = توصيل مجاني.
+  deliveryFee      Decimal                                @default(10) @db.Decimal(10, 2)
+  minOrderTotal    Decimal                                @default(0) @db.Decimal(10, 2)
+  rating           Decimal                                @default(0) @db.Decimal(2, 1)
+  ratingCount      Int                                    @default(0)
+  isActive         Boolean                                @default(true)
+  createdAt        DateTime                               @default(now())
+  updatedAt        DateTime                               @updatedAt
+
+  workingHours WorkingHour[]
+  menuItems    MenuItem[]
+  orders       Order[]
+  users        MerchantUser[]
+  favorites    Favorite[]
+
+  @@index([restaurantId])
+  @@index([status])
+  @@map("branches")
+}
+
+model MerchantUser {
+  id        String       @id @default(uuid())
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branchId  String
+  branch    Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  role      MerchantRole @default(CASHIER)
+  createdAt DateTime     @default(now())
+
+  @@unique([userId, branchId])
+  @@map("merchant_users")
+}
+
+model WorkingHour {
+  id        String   @id @default(uuid())
+  branchId  String
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  weekday   Int // 0 = الأحد … 6 = السبت
+  opensAt   String //  "09:00"
+  closesAt  String //  "23:30"
+  isClosed  Boolean  @default(false) // يوم إجازة
+  isRamadan Boolean  @default(false) // فترة رمضان
+  createdAt DateTime @default(now())
+
+  @@index([branchId, weekday])
+  @@map("working_hours")
+}
+
+// ──────────────────────────────────────────────────────────────
+// Menu
+// ──────────────────────────────────────────────────────────────
+
+model MenuCategory {
+  id           String     @id @default(uuid())
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  nameAr       String
+  nameEn       String
+  sortOrder    Int        @default(0) // ترتيب السحب والإفلات
+  isActive     Boolean    @default(true)
+
+  items MenuItem[]
+
+  @@index([restaurantId, sortOrder])
+  @@map("menu_categories")
+}
+
+model MenuItem {
+  id            String           @id @default(uuid())
+  categoryId    String
+  category      MenuCategory     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  branchId      String? // null = متاح في كل الفروع
+  branch        Branch?          @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  nameAr        String
+  nameEn        String
+  descriptionAr String?
+  descriptionEn String?
+  imageUrl      String?
+  price         Decimal          @db.Decimal(10, 2)
+  calories      Int?
+  availability  ItemAvailability @default(AVAILABLE)
+  // لما تكون OUT_OF_STOCK_TODAY بترجع AVAILABLE تلقائياً بعد التاريخ ده
+  availableFrom DateTime?
+  sortOrder     Int              @default(0)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  optionGroups OptionGroup[]
+  orderItems   OrderItem[]
+
+  @@index([categoryId, sortOrder])
+  @@index([availability])
+  @@map("menu_items")
+}
+
+model OptionGroup {
+  id         String          @id @default(uuid())
+  menuItemId String
+  menuItem   MenuItem        @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  nameAr     String // "الحجم" / "الإضافات"
+  nameEn     String
+  type       OptionGroupType @default(SINGLE)
+  isRequired Boolean         @default(false)
+  minSelect  Int             @default(0)
+  maxSelect  Int             @default(1)
+  sortOrder  Int             @default(0)
+
+  options Option[]
+
+  @@index([menuItemId, sortOrder])
+  @@map("option_groups")
+}
+
+model Option {
+  id            String      @id @default(uuid())
+  optionGroupId String
+  optionGroup   OptionGroup @relation(fields: [optionGroupId], references: [id], onDelete: Cascade)
+  nameAr        String
+  nameEn        String
+  extraPrice    Decimal     @default(0) @db.Decimal(10, 2)
+  isAvailable   Boolean     @default(true)
+  sortOrder     Int         @default(0)
+
+  @@index([optionGroupId, sortOrder])
+  @@map("options")
+}
+
+// ──────────────────────────────────────────────────────────────
+// Captain
+// ──────────────────────────────────────────────────────────────
+
+model Captain {
+  id             String                                 @id @default(uuid())
+  userId         String                                 @unique
+  user           User                                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// null = كابتن مستقل بيتحاسب مباشرة مع المنصة. لو متسجّل لشركة، مستحقاته
+  /// بتروح للشركة والشركة بتوزّع عليه.
+  companyId      String?
+  company        Company?                               @relation(fields: [companyId], references: [id])
+  nationalId     String                                 @unique
+  vehicleType    VehicleType                            @default(MOTORCYCLE)
+  plateNumber    String?
+  status         CaptainStatus                          @default(OFFLINE)
+  isVerified     Boolean                                @default(false) // بعد التحقق بالوجه + الوثائق
+  faceVerifiedAt DateTime?
+  // ── ربط هيئة النقل (بطاقة التوصيل / التشغيل) ──
+  tgaCardNumber   String?    @unique // رقم بطاقة التوصيل من الهيئة
+  tgaCardExpiresAt DateTime? // تاريخ انتهاء البطاقة
+  tgaStatus       TgaStatus  @default(NOT_LINKED)
+  tgaCheckedAt    DateTime? // آخر مرة اتحقّقنا فيها مع الهيئة
+  tgaRejectReason String? // سبب الرفض لو الهيئة رفضت
+  // ── تخصيص منطقة العمل ──
+  // الكابتن المسند لمنطقة بياخد طلبات المنطقة دي بس طول ما هو موجود جوّاها.
+  assignedZoneId String?
+  assignedZone   Zone?      @relation(fields: [assignedZoneId], references: [id])
+  // مندوب مشي داخل الحرم — بيستلم من مندوب المركبة عند نقطة الالتقاء ويكمّل مشي.
+  isFootCourier  Boolean    @default(false)
+  rating         Decimal                                @default(5) @db.Decimal(2, 1)
+  ratingCount    Int                                    @default(0)
+  walletBalance  Decimal                                @default(0) @db.Decimal(10, 2)
+  // آخر موقع معروف — المصدر الحي في Redis، ده snapshot للاستعلامات الجغرافية
+  lastLocation   Unsupported("geography(Point, 4326)")?
+  lastSeenAt     DateTime?
+  createdAt      DateTime                               @default(now())
+  updatedAt      DateTime                               @updatedAt
+
+  documents     CaptainDocument[]
+  walletEntries WalletTransaction[]
+  withdrawals   WithdrawalRequest[]
+  payoutMethods PayoutMethod[]
+  orders        Order[]
+  footOrders    Order[]               @relation("FootCaptain") // طلبات كمندوب مشي داخل الحرم
+  shifts        Shift[]
+  distributions CaptainDistribution[]
+  tripOffers    TripOffer[]
+  faceChecks    FaceCheck[]
+
+  @@index([status])
+  @@index([companyId])
+  @@index([assignedZoneId])
+  @@map("captains")
+}
+
+/// سجل كل عرض مهمة اتبعت لكابتن ورده عليه. من غيره نسبة القبول مستحيلة
+/// (كانت بترجع null). بيتكتب من `DispatchService` مع كل عرض ورد.
+model TripOffer {
+  id          String          @id @default(uuid())
+  orderId     String
+  order       Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  captainId   String
+  captain     Captain         @relation(fields: [captainId], references: [id], onDelete: Cascade)
+  status      TripOfferStatus @default(OFFERED)
+  /// المستحق المعروض والمسافة وقت العرض — snapshot للتحليل.
+  payout      Decimal         @db.Decimal(10, 2)
+  distanceKm  Decimal         @db.Decimal(6, 2)
+  offeredAt   DateTime        @default(now())
+  respondedAt DateTime?
+
+  @@unique([orderId, captainId])
+  @@index([captainId, status])
+  @@map("trip_offers")
+}
+
+/// شركة أسطول توصيل — بتوفّر مناديب (كباتن) للمنصة. المنصة بتتحاسب معاها
+/// كطرف (زي المطعم): مستحقات مناديبها بتتجمّع وتتحوّل للشركة، والشركة بتوزّع.
+model Company {
+  id             String        @id @default(uuid())
+  nameAr         String
+  nameEn         String?
+  contactPhone   String?
+  /// عمولة المنصة على مستحقات مناديب الشركة (٪). 0 = المنصة بتحوّل المستحق كامل.
+  commissionRate Decimal       @default(0) @db.Decimal(5, 2)
+  status         CompanyStatus @default(ACTIVE)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  captains      Captain[]
+  users         CompanyUser[]
+  settlements   CompanySettlement[]
+  payoutAccount CompanyPayoutAccount?
+
+  @@map("companies")
+}
+
+/// تسوية شركة أسطول — بتجمّع أجور مناديب الشركة عن طلباتهم المسلّمة غير المسوّاة،
+/// ناقص عمولة المنصة، وبتتحوّل للشركة. نفس مبدأ تسوية المطعم: كل رقم ليه سطر،
+/// وكل طلب بيتسوّى مرة واحدة (`Order.companySettlementId`).
+model CompanySettlement {
+  id            String           @id @default(uuid())
+  companyId     String
+  company       Company          @relation(fields: [companyId], references: [id])
+  periodStart   DateTime
+  periodEnd     DateTime
+  /// إجمالي أجور المناديب عن الطلبات الداخلة (`Σ order.captainPayout`).
+  grossPayout   Decimal          @db.Decimal(12, 2)
+  /// عمولة المنصة على الأجور (`commissionRate%`).
+  commission    Decimal          @default(0) @db.Decimal(12, 2)
+  /// grossPayout − commission — الصافي اللي بيتحوّل للشركة.
+  netPayout     Decimal          @db.Decimal(12, 2)
+  /// عدد الرحلات الداخلة — للعرض السريع.
+  tripCount     Int              @default(0)
+  status        SettlementStatus @default(PENDING)
+  payoutRef     String?
+  transferRef   String?
+  transferredAt DateTime?
+  createdById   String?
+  createdAt     DateTime         @default(now())
+
+  orders        Order[]
+  lines         CompanySettlementLine[]
+  distributions CaptainDistribution[]
+
+  @@index([companyId, periodStart])
+  @@index([status])
+  @@map("company_settlements")
+}
+
+/// حصة مندوب من تسوية شركة — صف واحد لكل مندوب في التسوية. ده الطرف التاني من
+/// النموذج: بعد ما المنصة تدفع للشركة، الشركة بتدفع لكل مندوب حصته وبتسجّلها هنا.
+model CaptainDistribution {
+  id                  String             @id @default(uuid())
+  companySettlementId String
+  companySettlement   CompanySettlement  @relation(fields: [companySettlementId], references: [id], onDelete: Cascade)
+  captainId           String
+  captain             Captain            @relation(fields: [captainId], references: [id])
+  /// إجمالي أجر المندوب في التسوية دي (خام، قبل أي خصم من الشركة).
+  amount              Decimal            @db.Decimal(12, 2)
+  tripCount           Int                @default(0)
+  status              DistributionStatus @default(PENDING)
+  /// مرجع دفع الشركة للمندوب (حوالة/كاش) — بيتسجّل وقت التعليم كمدفوع.
+  reference           String?
+  paidAt              DateTime?
+  /// مستخدم الشركة اللي سجّل الدفع.
+  paidById            String?
+  createdAt           DateTime           @default(now())
+
+  @@unique([companySettlementId, captainId])
+  @@index([captainId, status])
+  @@map("captain_distributions")
+}
+
+/// سطر تسوية شركة — رحلة واحدة لمندوب. مجموع السطور = grossPayout (قبل العمولة).
+model CompanySettlementLine {
+  id                  String            @id @default(uuid())
+  companySettlementId String
+  companySettlement   CompanySettlement @relation(fields: [companySettlementId], references: [id], onDelete: Cascade)
+  orderId             String
+  captainId           String
+  /// أجر المندوب عن الرحلة دي.
+  amount              Decimal           @db.Decimal(12, 2)
+  descriptionAr       String
+  createdAt           DateTime          @default(now())
+
+  @@index([companySettlementId])
+  @@map("company_settlement_lines")
+}
+
+/// حساب استلام الشركة — الوجهة اللي تسويتها بتتحوّل عليها. مقنّع زي حساب المطعم.
+model CompanyPayoutAccount {
+  id          String   @id @default(uuid())
+  companyId   String   @unique
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  bankName    String
+  accountName String
+  iban        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("company_payout_accounts")
+}
+
+/// مستخدم لوحة تحكم تابع لشركة — بيشوف/يدير مناديب شركته بس (زي MerchantUser للفرع).
+model CompanyUser {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, companyId])
+  @@map("company_users")
+}
+
+model CaptainDocument {
+  id           String         @id @default(uuid())
+  captainId    String
+  captain      Captain        @relation(fields: [captainId], references: [id], onDelete: Cascade)
+  type         DocumentType
+  fileUrl      String
+  status       DocumentStatus @default(PENDING)
+  /// سبب الرفض — إلزامي منطقياً لما الحالة REJECTED عشان الكابتن يعرف يصلّح إيه.
+  rejectReason String?
+  expiresAt    DateTime?
+  reviewedAt   DateTime?
+  reviewedById String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  /// وثيقة واحدة فعّالة لكل نوع — الرفع الجديد بيستبدل القديم.
+  @@unique([captainId, type])
+  @@index([captainId])
+  @@index([status])
+  @@map("captain_documents")
+}
+
+/// حركة على محفظة الكابتن — كل ريال ليه سطر هنا.
+model WalletTransaction {
+  id            String          @id @default(uuid())
+  captainId     String
+  captain       Captain         @relation(fields: [captainId], references: [id], onDelete: Cascade)
+  type          WalletEntryType
+  /// موجب = دخل للمحفظة · سالب = خرج منها.
+  amount        Decimal         @db.Decimal(10, 2)
+  /// الرصيد بعد الحركة — بيتحسب وقت الإنشاء عشان الكشف يبان صح من غير إعادة حساب.
+  balanceAfter  Decimal         @db.Decimal(10, 2)
+  descriptionAr String
+  orderId       String?
+  order         Order?          @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  withdrawalId  String?
+  /// الاسترداد اللي سبّب الخصم — مفتاح منع التكرار كمان: الطلب الواحد ممكن
+  /// يترد أكتر من مرة، فمنع التكرار على الطلب كان هيبلع الخصم التاني.
+  refundId      String?         @unique
+  createdAt     DateTime        @default(now())
+
+  @@index([captainId, createdAt])
+  @@map("wallet_transactions")
+}
+
+/// طلب سحب من المحفظة — بيتراجع من الأدمن.
+model WithdrawalRequest {
+  id             String            @id @default(uuid())
+  captainId      String
+  captain        Captain           @relation(fields: [captainId], references: [id], onDelete: Cascade)
+  amount         Decimal           @db.Decimal(10, 2)
+  status         WithdrawalStatus  @default(PENDING)
+  destination    PayoutDestination
+  /// آخر ٤ أرقام من الآيبان أو رقم stc pay — مابنخزنش البيانات كاملة.
+  destinationRef String
+  rejectReason   String?
+  reviewedAt     DateTime?
+  reviewedById   String?
+  transferredAt  DateTime?
+  createdAt      DateTime          @default(now())
+
+  @@index([captainId, createdAt])
+  @@index([status])
+  @@map("withdrawal_requests")
+}
+
+/// حساب استلام الأرباح — بنك أو stc pay.
+model PayoutMethod {
+  id          String            @id @default(uuid())
+  captainId   String
+  captain     Captain           @relation(fields: [captainId], references: [id], onDelete: Cascade)
+  destination PayoutDestination
+  /// اسم البنك أو «stc pay».
+  label       String
+  /// الآيبان أو رقم الجوال — بيتعرض مقنّع في الواجهات.
+  accountRef  String
+  isDefault   Boolean           @default(false)
+  createdAt   DateTime          @default(now())
+
+  @@index([captainId])
+  @@map("payout_methods")
+}
+
+model Shift {
+  id        String    @id @default(uuid())
+  captainId String
+  captain   Captain   @relation(fields: [captainId], references: [id], onDelete: Cascade)
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+  earnings  Decimal   @default(0) @db.Decimal(10, 2)
+  tripCount Int       @default(0)
+
+  @@index([captainId, startedAt])
+  @@map("shifts")
+}
+
+// ──────────────────────────────────────────────────────────────
+// Orders
+// ──────────────────────────────────────────────────────────────
+
+model Order {
+  id          String @id @default(uuid())
+  orderNumber String @unique // رقم قصير للمطابقة مع الكابتن، مثال: A-4821
+  pickupCode  String // كود استلام المندوب من المطعم
+  // كود تسليم مندوب المركبة لمندوب المشي (التناوب) — بيظهر لمندوب المركبة ويدخّله المشي.
+  handoffCode String @default("0000")
+  // كود تسليم العميل — بيظهر للعميل ويدخّله المندوب عند التسليم.
+  deliveryCode String @default("0000")
+  // صورة إثبات التسليم النهائي للعميل.
+  deliveryPhotoUrl String?
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+  branchId   String
+  branch     Branch   @relation(fields: [branchId], references: [id])
+  captainId  String?
+  captain    Captain? @relation(fields: [captainId], references: [id])
+  // ── توصيل الحرم بالتناوب (تسليم مندوب لمندوب) ──
+  // الوجهة داخل منطقة حرم ⇒ الطلب محتاج تسليم من مندوب المركبة لمندوب المشي.
+  requiresRelay Boolean  @default(false)
+  // مندوب المشي اللي بيكمّل داخل الحرم (غير `captainId` = مندوب المركبة).
+  footCaptainId String?
+  footCaptain   Captain? @relation("FootCaptain", fields: [footCaptainId], references: [id])
+  relayHandoff  RelayHandoff?
+  addressId  String
+  address    Address  @relation(fields: [addressId], references: [id])
+
+  status OrderStatus @default(PENDING)
+
+  // مبالغ
+  subtotal      Decimal @db.Decimal(10, 2)
+  deliveryFee   Decimal @db.Decimal(10, 2)
+  discount      Decimal @default(0) @db.Decimal(10, 2)
+  vat           Decimal @default(0) @db.Decimal(10, 2)
+  total         Decimal @db.Decimal(10, 2)
+  commission    Decimal @default(0) @db.Decimal(10, 2) // عمولة المنصة من المطعم
+  captainPayout Decimal @default(0) @db.Decimal(10, 2)
+
+  paymentMethod PaymentMethod
+  paymentStatus PaymentStatus @default(PENDING)
+
+  customerNotes String?
+  prepMinutes   Int? // اللي المطعم اختاره وقت القبول
+  rejectReason  String? // إلزامي عند الرفض
+  cancelReason  String?
+
+  // طوابع زمنية لكل انتقال حالة (للتقارير و SLA)
+  placedAt    DateTime  @default(now())
+  acceptedAt  DateTime?
+  readyAt     DateTime?
+  assignedAt  DateTime?
+  pickedUpAt  DateTime?
+  deliveredAt DateTime?
+  cancelledAt DateTime?
+
+  couponId String?
+  coupon   Coupon? @relation(fields: [couponId], references: [id])
+
+  /// تسوية المطعم اللي دخل فيها مبيعات الطلب — الطلب بيتسوّى مرة واحدة بس، وده
+  /// ضمان عدم الدفع مرتين (زي `refundId` في دفتر المحفظة).
+  settlementId        String?
+  settlement          Settlement?        @relation(fields: [settlementId], references: [id])
+  /// تسوية الشركة اللي دخل فيها مستحق الكابتن (لو تابع لشركة). منفصل عن
+  /// `settlementId` لأن الطلب بيدخل في تسويتين لطرفين: المطعم (مبيعات) والشركة (أجر المندوب).
+  companySettlementId String?
+  companySettlement   CompanySettlement? @relation(fields: [companySettlementId], references: [id])
+
+  items         OrderItem[]
+  events        OrderEvent[]
+  review        Review?
+  transaction   Transaction?
+  refunds       Refund[]
+  walletEntries WalletTransaction[]
+  tripOffers    TripOffer[]
+  tickets       SupportTicket[]
+
+  @@index([branchId, status])
+  @@index([settlementId])
+  @@index([companySettlementId])
+  @@index([captainId, status])
+  @@index([customerId, placedAt])
+  @@index([status, placedAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id         String   @id @default(uuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId String
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+  // snapshot وقت الطلب — الأسعار والأسماء ممكن تتغير بعدين
+  nameAr     String
+  nameEn     String
+  unitPrice  Decimal  @db.Decimal(10, 2)
+  quantity   Int
+  notes      String?
+  lineTotal  Decimal  @db.Decimal(10, 2)
+
+  options OrderItemOption[]
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+model OrderItemOption {
+  id          String    @id @default(uuid())
+  orderItemId String
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  groupNameAr String
+  nameAr      String
+  nameEn      String
+  extraPrice  Decimal   @default(0) @db.Decimal(10, 2)
+
+  @@index([orderItemId])
+  @@map("order_item_options")
+}
+
+// سجل كل انتقال حالة — مين غيّرها وإمتى (للتدقيق وشاشة التتبع)
+model OrderEvent {
+  id        String      @id @default(uuid())
+  orderId   String
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    OrderStatus
+  actorId   String?
+  actorRole UserRole?
+  note      String?
+  createdAt DateTime    @default(now())
+
+  @@index([orderId, createdAt])
+  @@map("order_events")
+}
+
+// ──────────────────────────────────────────────────────────────
+// Reviews · Coupons · Money
+// ──────────────────────────────────────────────────────────────
+
+model Review {
+  id              String   @id @default(uuid())
+  orderId         String   @unique
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  customerId      String
+  customer        Customer @relation(fields: [customerId], references: [id])
+  restaurantStars Int // 1..5
+  captainStars    Int? // 1..5
+  comment         String?
+  createdAt       DateTime @default(now())
+
+  @@index([customerId])
+  @@map("reviews")
+}
+
+/// تذكرة دعم — شكوى/استفسار من العميل، ممكن تكون مربوطة بطلب. ليها محادثة
+/// (رسائل) وحالة وأولوية وموظف مسند. كيان مستقل مش مشتق من الطلبات.
+model SupportTicket {
+  id           String         @id @default(uuid())
+  ticketNumber String         @unique
+  customerId   String
+  customer     Customer       @relation(fields: [customerId], references: [id])
+  orderId      String? // ربط اختياري بطلب
+  order        Order?         @relation(fields: [orderId], references: [id])
+  category     TicketCategory
+  priority     TicketPriority @default(NORMAL)
+  status       TicketStatus   @default(OPEN)
+  subject      String
+  // موظف الدعم المسند (User بدور ADMIN). null = لسه مش متسند.
+  assignedToId String?
+  assignedTo   User?          @relation("TicketAssignee", fields: [assignedToId], references: [id])
+  lastMessageAt DateTime      @default(now())
+  resolvedAt   DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  messages TicketMessage[]
+
+  @@index([status])
+  @@index([customerId])
+  @@index([assignedToId])
+  @@map("support_tickets")
+}
+
+/// فحص وجه يومي للمندوب — سيلفي بيتقارن بالوجه المرجعي (وثيقة PHOTO). المطابقة
+/// بتتعمل عبر بوابة مجرّدة؛ كل فحص بيتسجّل بنتيجته ومزوّده ووقته. المندوب لازم
+/// يبقى عنده فحص «موثّق» النهاردة عشان يشتغل (متحكوم بـ FACE_CHECK_ENFORCE).
+model FaceCheck {
+  id           String          @id @default(uuid())
+  captainId    String
+  captain      Captain         @relation(fields: [captainId], references: [id], onDelete: Cascade)
+  selfieUrl    String
+  status       FaceCheckStatus @default(PENDING)
+  confidence   Float? // نسبة تطابق المزوّد (لو رجّعها)
+  provider     String // 'stub' دلوقتي — المزوّد البيومتري الحقيقي بيتوصّل بعدين
+  rejectReason String?
+  checkedAt    DateTime?
+  createdAt    DateTime        @default(now())
+
+  @@index([captainId, createdAt])
+  @@map("face_checks")
+}
+
+/// منطقة توصيل — مستطيل جغرافي (حدود min/max) بتسعيرة خاصة. لما عنوان العميل
+/// يقع جوّاها، رسوم التوصيل بتتاخد منها بدل رسوم الفرع الافتراضية. المستطيل
+/// أبسط من مضلّع حقيقي بس بيغطّي حالة التسعير بالمنطقة، ونفس شكل خريطة اللوحة.
+enum ZoneType {
+  STANDARD // منطقة توصيل عادية (مركبات)
+  HARAM // داخل حدود الحرم — توصيل مشي + تسليم مندوب لمندوب
+}
+
+model Zone {
+  id            String   @id @default(uuid())
+  name          String
+  type          ZoneType @default(STANDARD)
+  city          String? // مكة / المدينة… للتصنيف
+  // حدود المستطيل (WGS84) — bounding box سريع للفلترة المبدئية. بيتحسب تلقائياً
+  // من البولي‑جون لو اترسم يدوياً.
+  minLat        Float
+  maxLat        Float
+  minLng        Float
+  maxLng        Float
+  // البولي‑جون المرسوم يدوياً (خطوط على الخريطة). لو موجود فهو المرجع الحقيقي
+  // لاختبار «النقطة جوّه المنطقة» (ST_Contains)، والمستطيل فوق مجرد فلتر أولي.
+  boundary      Unsupported("geography(Polygon, 4326)")?
+  // نقطة الالتقاء/التسليم (للحرم): مكان تسليم المندوب للمندوب.
+  handoffLat    Float?
+  handoffLng    Float?
+  handoffName   String?
+  deliveryFee   Decimal  @db.Decimal(10, 2)
+  minOrderTotal Decimal  @default(0) @db.Decimal(10, 2)
+  // أولوية عند التداخل — الأعلى بيكسب (منطقة محدّدة تغلب منطقة عامة).
+  priority      Int      @default(0)
+  color         String   @default("#F5C518") // للعرض على الخريطة
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  captains      Captain[] // الكباتن المسندين للعمل في المنطقة دي
+  handoffPoints HandoffPoint[] // نقاط الالتقاء/التسليم (ممكن أكتر من نقطة — بوابات الحرم)
+
+  @@index([isActive, priority])
+  @@index([type])
+  @@map("zones")
+}
+
+/// نقطة التقاء/تسليم داخل منطقة (بوابة حرم مثلاً) — إحداثيات دقيقة على الخريطة.
+/// المنطقة الواحدة ممكن يكون ليها أكتر من نقطة، ومندوب المركبة بيسلّم عند الأقرب.
+model HandoffPoint {
+  id        String   @id @default(uuid())
+  zoneId    String
+  zone      Zone     @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  name      String
+  lat       Float
+  lng       Float
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([zoneId])
+  @@map("handoff_points")
+}
+
+enum RelayStatus {
+  PENDING // مندوب المركبة في الطريق لنقطة الالتقاء
+  ARRIVED // وصل نقطة الالتقاء وبيستنى مندوب المشي
+  CONFIRMED // اتسلّم بالصورة لمندوب المشي
+}
+
+/// عملية تسليم مندوب لمندوب عند نقطة الالتقاء (حدود الحرم). التأكيد بالصورة.
+model RelayHandoff {
+  id            String      @id @default(uuid())
+  orderId       String      @unique
+  order         Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  zoneId        String // منطقة الحرم اللي التسليم على حدودها
+  fromCaptainId String // مندوب المركبة (سلّم)
+  toCaptainId   String // مندوب المشي (استلم)
+  status        RelayStatus @default(PENDING)
+  photoUrl      String? // صورة تأكيد التسليم عند نقطة الالتقاء
+  handoffLat    Float?
+  handoffLng    Float?
+  confirmedAt   DateTime?
+  createdAt     DateTime    @default(now())
+
+  @@map("relay_handoffs")
+}
+
+/// مخزن إعدادات/مفاتيح التكاملات والربط مع الهيئات — بيتعدّل من اللوحة.
+/// القيم الحسّاسة (secrets) بتترجّع مقنّعة في العرض، وبتتخزّن مشفّرة.
+model Setting {
+  key       String   @id
+  value     String?
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
+
+/// رسالة في محادثة تذكرة — من العميل أو موظف الدعم أو النظام.
+model TicketMessage {
+  id         String           @id @default(uuid())
+  ticketId   String
+  ticket     SupportTicket    @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  senderRole TicketSenderRole
+  senderId   String? // userId للمرسل (null لرسائل النظام)
+  body       String
+  // ملاحظة داخلية بين موظفي الدعم — مابتظهرش للعميل.
+  internal   Boolean          @default(false)
+  createdAt  DateTime         @default(now())
+
+  @@index([ticketId])
+  @@map("ticket_messages")
+}
+
+/// مفضلة العميل — فرع واحد لكل صف.
+model Favorite {
+  id         String   @id @default(uuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  branchId   String
+  branch     Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([customerId, branchId])
+  @@index([customerId])
+  @@map("favorites")
+}
+
+model Coupon {
+  id            String    @id @default(uuid())
+  code          String    @unique
+  descriptionAr String?
+  percentOff    Int? // خصم نسبة
+  amountOff     Decimal?  @db.Decimal(10, 2) // أو خصم مبلغ
+  maxDiscount   Decimal?  @db.Decimal(10, 2)
+  minOrderTotal Decimal   @default(0) @db.Decimal(10, 2)
+  usageLimit    Int?
+  usedCount     Int       @default(0)
+  startsAt      DateTime?
+  expiresAt     DateTime?
+  isActive      Boolean   @default(true)
+
+  orders Order[]
+
+  @@map("coupons")
+}
+
+model Transaction {
+  id            String        @id @default(uuid())
+  orderId       String        @unique
+  order         Order         @relation(fields: [orderId], references: [id])
+  provider      String // moyasar / cash / wallet
+  providerRefId String? // معرّف العملية من البوابة
+  method        PaymentMethod
+  amount        Decimal       @db.Decimal(10, 2)
+  status        PaymentStatus @default(PENDING)
+  rawPayload    Json?
+  /// رابط صفحة الدفع المستضافة (بوابة إلكترونية) — التطبيق بيفتحه عشان العميل
+  /// يدفع بالبطاقة/مدى/Apple Pay. `null` للكاش أو التحصيل الفوري.
+  checkoutUrl   String?
+  createdAt     DateTime      @default(now())
+  /// وقت ما البوابة أكّدت التحصيل — مش وقت إنشاء العملية.
+  paidAt        DateTime?
+
+  @@index([status])
+  @@map("transactions")
+}
+
+/// استرداد كامل أو جزئي. منفصل عن `Transaction` لأن الطلب الواحد ممكن يترد
+/// على أكتر من دفعة (صنف ناقص النهاردة، وشكوى بكرة).
+model Refund {
+  id                   String          @id @default(uuid())
+  orderId              String
+  order                Order           @relation(fields: [orderId], references: [id])
+  amount               Decimal         @db.Decimal(10, 2)
+  reasonAr             String
+  liability            RefundLiability @default(NONE)
+  /// العمولة اللي رجعت للمطعم مع الاسترداد ده — صفر لو المنصة أو الكابتن
+  /// هما اللي اتحمّلوا. بتتخزن وقت الاسترداد عشان التقرير مايعيدش حسابها
+  /// بنسبة عمولة ممكن تكون اتغيّرت بعدين.
+  commissionReversed   Decimal         @default(0) @db.Decimal(10, 2)
+  status               RefundStatus    @default(PENDING)
+  /// نفس مزوّد عملية التحصيل — الكاش مالوش استرداد إلكتروني.
+  provider             String
+  providerRefId        String?
+  /// الأدمن اللي عمل الاسترداد — مسؤولية واضحة على كل قرش راجع.
+  createdById          String?
+  createdBy            User?           @relation("RefundCreatedBy", fields: [createdById], references: [id])
+  /// الأدمن اللي وافق (للمبالغ الكبيرة) — لازم يكون غير اللي عمله (فصل المهام).
+  approvedById         String?
+  approvedBy           User?           @relation("RefundApprovedBy", fields: [approvedById], references: [id])
+  /// سبب رفض الموافقة، لو اترفض.
+  approvalRejectReason String?
+  failReason           String?
+  createdAt            DateTime        @default(now())
+  completedAt          DateTime?
+  /// التسوية اللي خصمت الاسترداد ده من مستحقات المطعم — بيتربط بس لو تحمّله
+  /// المطعم أو «مافيش». استرداد بعد ما الطلب اتسوّى بيتحسب في الدورة اللي بعدها
+  /// كتسوية عكسية (clawback) — عشان كده الربط بالتسوية مش بالطلب.
+  settlementId         String?
+  settlement           Settlement?     @relation(fields: [settlementId], references: [id])
+
+  @@index([orderId])
+  @@index([status])
+  @@index([settlementId])
+  @@map("refunds")
+}
+
+/// تسوية مالية لمطعم عن فترة: كل الطلبات المسلّمة غير المسوّاة + استرداداته
+/// غير المحتسبة. كل رقم فيها ليه سطر في `SettlementLine` — مافيش مجمّع من الهوا.
+model Settlement {
+  id                 String           @id @default(uuid())
+  restaurantId       String
+  restaurant         Restaurant       @relation(fields: [restaurantId], references: [id])
+  periodStart        DateTime
+  periodEnd          DateTime
+  /// إجمالي مبيعات الطلبات المسلّمة الداخلة في التسوية.
+  grossSales         Decimal          @db.Decimal(12, 2)
+  /// عمولة المنصة على الطلبات دي.
+  commission         Decimal          @db.Decimal(12, 2)
+  /// استردادات تحمّلها المطعم (أصل المبلغ) — بتتخصم من مستحقاته.
+  refundsBorne       Decimal          @default(0) @db.Decimal(12, 2)
+  /// عمولة رجعت للمطعم مع استرداداته — بتتضاف لمستحقاته.
+  commissionReversed Decimal          @default(0) @db.Decimal(12, 2)
+  /// grossSales − commission − refundsBorne + commissionReversed. ممكن يطلع
+  /// سالب لو دورة فيها استردادات متأخرة أكتر من مبيعاتها الجديدة.
+  netPayout          Decimal          @db.Decimal(12, 2)
+  status             SettlementStatus @default(PENDING)
+  /// وجهة التحويل وقت التسوية (مقنّعة) + مرجع الحوالة — سجل مش مصدر.
+  payoutRef          String?
+  transferRef        String?
+  transferredAt      DateTime?
+  createdById        String?
+  createdAt          DateTime         @default(now())
+
+  orders  Order[]
+  refunds Refund[]
+  lines   SettlementLine[]
+
+  @@index([restaurantId, periodStart])
+  @@index([status])
+  @@map("settlements")
+}
+
+/// نوع سطر التسوية — بيوضّح كل رقم داخل في `netPayout` جه منين.
+enum SettlementLineType {
+  ORDER // مبيعات طلب مسلّم (موجب)
+  REFUND // استرداد تحمّله المطعم (سالب، بعد رجوع العمولة)
+}
+
+/// سطر واحد في التسوية — طلب أو استرداد. المجموع الجبري لكل السطور = netPayout.
+model SettlementLine {
+  id            String             @id @default(uuid())
+  settlementId  String
+  settlement    Settlement         @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+  type          SettlementLineType
+  orderId       String?
+  refundId      String?
+  /// صافي مساهمة السطر في المستحق: للطلب = total − commission · للاسترداد =
+  /// −(amount − commissionReversed).
+  amount        Decimal            @db.Decimal(12, 2)
+  descriptionAr String
+  createdAt     DateTime           @default(now())
+
+  @@index([settlementId])
+  @@map("settlement_lines")
+}
+
+/// سجل تدقيق — بيتكتب مع كل إجراء صلاحية بيحرّك فلوس أو بيغيّر حساب.
+/// append-only: مافيش تعديل ولا حذف من الكود، عشان يفضل مرجع موثوق «مين عمل إيه».
+model AuditLog {
+  id         String      @id @default(uuid())
+  /// null لو النظام هو اللي عمله (مش مستخدم) — نادر بس ممكن.
+  actorId    String?
+  actor      User?       @relation(fields: [actorId], references: [id])
+  actorRole  UserRole
+  action     AuditAction
+  /// نوع الكيان المتأثر ومعرّفه — «refund» / «settlement» / «withdrawal» …
+  entityType String
+  entityId   String
+  /// وصف عربي جاهز للعرض — «استرداد 20 ر.س للطلب A-1004 (على المطعم)».
+  summaryAr  String
+  /// تفاصيل بنيوية للتدقيق (المبلغ، الجهة، قبل/بعد) — بيتقري مش بيتفلتر عليه.
+  metadata   Json?
+  createdAt  DateTime    @default(now())
+
+  @@index([action, createdAt])
+  @@index([entityType, entityId])
+  @@index([actorId, createdAt])
+  @@map("audit_logs")
+}
+
+/// حساب استلام المطعم — الوجهة اللي التسوية بتتحوّل عليها. مقنّع زي حساب الكابتن.
+model RestaurantPayoutAccount {
+  id           String     @id @default(uuid())
+  restaurantId String     @unique
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  bankName     String
+  accountName  String
+  /// الآيبان كامل — بيتقنّع في كل رد بيخرج من الـ API.
+  iban         String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@map("restaurant_payout_accounts")
+}

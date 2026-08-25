@@ -1,0 +1,24 @@
+{
+  "name": "delivery-platform",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/api",
+    "apps/admin-web",
+    "apps/merchant-web",
+    "packages/shared"
+  ],
+  "scripts": {
+    "dev:api": "npm run start:dev -w @delivery/api",
+    "dev:merchant": "npm run dev -w @delivery/merchant-web",
+    "dev:admin": "npm run dev -w @delivery/admin-web",
+    "build": "npm run build -w @delivery/shared && npm run build -w @delivery/api",
+    "db:up": "docker compose up -d db redis",
+    "db:migrate": "npm run prisma:migrate -w @delivery/api",
+    "db:seed": "npm run seed -w @delivery/api",
+    "db:studio": "npm run prisma:studio -w @delivery/api"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

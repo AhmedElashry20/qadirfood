@@ -1,0 +1,9 @@
+targets:
+  $default:
+    builders:
+      json_serializable:
+        options:
+          # مهم: من غير ده الأوبجكتات المتداخلة (items, optionGroups...) مش هتتحول لـ JSON صح
+          explicit_to_json: true
+          field_rename: none
+          include_if_null: false

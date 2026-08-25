@@ -1,0 +1,52 @@
+# .dockerignore لصورة الباك إند (قادر فود)
+#
+# ملاحظة: سياق البناء هو **جذر الريبو** (شوف الـ Dockerfile و docker-compose.prod.yml).
+# الـ Dockerfile بينسخ الكود المصدري باختيار دقيق (مش COPY . .)، فحتى لو Docker
+# قرأ ملف .dockerignore من مكان تاني، مافيش خطر إن حاجات محلية تتسرّب للصورة.
+# الملف ده بيصغّر سياق البناء المنقول للـ daemon ويسرّع البناء.
+
+# اعتماديات ومخرجات محلية — بتتبني جوّه الصورة من جديد
+node_modules
+**/node_modules
+dist
+**/dist
+build
+**/build
+coverage
+**/coverage
+
+# الأسرار — لازم ما تدخلش الصورة أبداً (بتيجي من env_file وقت التشغيل)
+.env
+.env.*
+!.env.example
+*.pem
+serviceAccountKey.json
+google-services.json
+GoogleService-Info.plist
+
+# الملفات المرفوعة (بتتخزّن في volume، مش في الصورة)
+uploads
+**/uploads
+
+# تطبيقات مش جزء من صورة الـ API
+apps/admin-web
+apps/merchant-web
+apps/customer_app
+apps/captain_app
+apps/merchant_app
+
+# Git وملفات المحرر ونظام التشغيل
+.git
+.gitignore
+.github
+.idea
+.vscode
+.DS_Store
+**/.DS_Store
+*.log
+npm-debug.log*
+
+# توثيق واختبارات — مش مطلوبة للتشغيل
+docs
+**/*.spec.ts
+**/*.test.ts

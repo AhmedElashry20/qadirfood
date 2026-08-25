@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  الاتصال بسيرفر التطوير المحلي (HTTP) — أندرويد ٩+ بيمنع cleartext افتراضياً.
+  بنسمح بيه للمضيفات المحلية بس، مش للإنترنت كله، فالإنتاج بيفضل HTTPS إجباري.
+  10.0.2.2 = localhost بتاع الجهاز من جوّه إيموليتر أندرويد.
+-->
+<network-security-config>
+  <domain-config cleartextTrafficPermitted="true">
+    <domain includeSubdomains="true">10.0.2.2</domain>
+    <domain includeSubdomains="true">localhost</domain>
+    <domain includeSubdomains="true">127.0.0.1</domain>
+  </domain-config>
+</network-security-config>

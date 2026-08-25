@@ -1,0 +1,113 @@
+# قادر فود (Qadir Food) — تشكيل الإنتاج
+# التشغيل:  docker compose -f docker-compose.prod.yml up -d --build
+#
+# القيم الحسّاسة كلها بتتقرأ من ملف .env في نفس المجلد (شوف docs/08-production-runbook.md).
+# قاعدة البيانات و Redis **مش مكشوفين** على الشبكة العامة — على الشبكة الداخلية بس،
+# والـ nginx هو الواجهة الوحيدة للخارج (80/443).
+
+name: qadirfood
+
+services:
+  # ── قاعدة البيانات: PostgreSQL 16 + PostGIS ────────────────────────────────
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: qadirfood_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in .env}
+      # ملاحظة: locale عربي مش مطلوب — التخزين UTF-8 بيكفي للنصوص العربية.
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      # مجلد النسخ الاحتياطي (pg_dump بيكتب هنا — شوف الدليل)
+      - ./deploy/backups:/backups
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+    # مافيش ports: — القاعدة مش مكشوفة برّه الشبكة الداخلية.
+
+  # ── الكاش وطابور السوكيت: Redis 7 ──────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: qadirfood_redis
+    restart: unless-stopped
+    # appendonly للاستمرارية + كلمة سر إلزامية في الإنتاج
+    command: ['redis-server', '--appendonly', 'yes', '--requirepass', '${REDIS_PASSWORD:?set REDIS_PASSWORD in .env}']
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', '-a', '${REDIS_PASSWORD}', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+    # مافيش ports: — Redis مش مكشوف برّه.
+
+  # ── الباك إند: NestJS API ──────────────────────────────────────────────────
+  api:
+    build:
+      # السياق = جذر الريبو (الـ API بيعتمد على packages/shared)
+      context: .
+      dockerfile: apps/api/Dockerfile
+    image: qadirfood-api:latest
+    container_name: qadirfood_api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      PORT: '3000'
+      # نتجاهل أي DATABASE_URL/REDIS_URL في .env ونستخدم أسماء الخدمات الداخلية.
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+    volumes:
+      # الملفات المرفوعة (وثائق/سيلفي الكابتن، صور المتاجر) — تفضل بعد إعادة البناء.
+      # لما تربط S3 (StorageDriver) الـ volume ده بيبقى غير ضروري.
+      - uploads_data:/app/apps/api/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 25s
+      retries: 3
+    networks:
+      - internal
+    # مافيش ports: — nginx بيوصل للـ API على الشبكة الداخلية (api:3000).
+
+  # ── الواجهة العكسية + HTTPS: Nginx ─────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: qadirfood_nginx
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      # شهادات Let's Encrypt (certbot على المضيف بيكتب هنا) — للقراءة فقط.
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      # webroot لتحدّي ACME (تجديد الشهادة من غير إيقاف nginx).
+      - ./deploy/certbot/www:/var/www/certbot:ro
+    depends_on:
+      - api
+    networks:
+      - internal
+
+volumes:
+  db_data:
+  redis_data:
+  uploads_data:
+
+networks:
+  internal:
+    driver: bridge

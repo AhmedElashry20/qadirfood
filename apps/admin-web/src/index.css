@@ -1,0 +1,88 @@
+/* Tailwind + خط عربي + اتجاه RTL */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-canvas font-sans text-ink;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* الاتجاه الافتراضي عربي — أي كتلة أرقام/لاتيني بتتعزل بـ ltr() من lib/format */
+  [dir='rtl'] {
+    text-align: right;
+  }
+
+  [dir='ltr'] {
+    text-align: left;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    @apply font-sans;
+  }
+
+  /* الحقول ما تاخدش أوتلاين المتصفح الافتراضي — عندنا ring خاص بالنظام */
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand ring-offset-1 ring-offset-surface;
+  }
+}
+
+@layer utilities {
+  /* أي رقم أو نص لاتيني بياخد .num */
+  .num {
+    @apply font-num;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* سكرول رفيع — اللوحة فيها جداول طويلة */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #d8d5c8 transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: #d8d5c8;
+  border-radius: 99px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: #c3bfae;
+}
+
+/* ── طباعة الفاتورة الضريبية ──
+   وقت الطباعة بنطبع منطقة الفاتورة بس (.invoice-print-root) ونخفي باقي
+   اللوحة والنافذة. المنطقة دي مخفية على الشاشة (.hidden) وبتبان في الطباعة بس. */
+@media print {
+  body {
+    overflow: visible !important;
+    background: #fff;
+  }
+
+  body > *:not(.invoice-print-root) {
+    display: none !important;
+  }
+
+  .invoice-print-root {
+    display: block !important;
+    padding: 24px;
+  }
+}

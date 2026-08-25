@@ -1,0 +1,152 @@
+// Dio + JWT — كل نداءات الـ API بتمر من هنا.
+// التوكن بيتخزّن في SharedPreferences، وبيتجدّد تلقائياً بـ refreshToken لما يرجع 401.
+import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'env.dart';
+
+/// خطأ من السيرفر برسالته العربية — الشاشات بتعرض `message` مباشرة.
+class ApiException implements Exception {
+  ApiException(this.message, {this.statusCode});
+
+  final String message;
+  final int? statusCode;
+
+  @override
+  String toString() => message;
+}
+
+class TokenStore {
+  TokenStore(this._prefs);
+
+  static const _access = 'access_token';
+  static const _refresh = 'refresh_token';
+
+  final SharedPreferences _prefs;
+
+  String? get accessToken => _prefs.getString(_access);
+  String? get refreshToken => _prefs.getString(_refresh);
+  bool get isLoggedIn => accessToken != null;
+
+  Future<void> save({required String access, required String refresh}) async {
+    await _prefs.setString(_access, access);
+    await _prefs.setString(_refresh, refresh);
+  }
+
+  Future<void> clear() async {
+    await _prefs.remove(_access);
+    await _prefs.remove(_refresh);
+  }
+}
+
+class ApiClient {
+  ApiClient(this.tokens) {
+    dio = Dio(
+      BaseOptions(
+        baseUrl: Env.api,
+        connectTimeout: const Duration(seconds: 12),
+        receiveTimeout: const Duration(seconds: 20),
+        headers: {'Content-Type': 'application/json'},
+      ),
+    );
+
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          final token = tokens.accessToken;
+          if (token != null) options.headers['Authorization'] = 'Bearer $token';
+          handler.next(options);
+        },
+        onError: (error, handler) async {
+          // 401 → جرّب تجديد التوكن مرة واحدة وأعد الطلب.
+          final isAuthCall = error.requestOptions.path.startsWith('/auth');
+          if (error.response?.statusCode == 401 && !isAuthCall && tokens.refreshToken != null) {
+            final refreshed = await _refresh();
+            if (refreshed) {
+              final options = error.requestOptions;
+              options.headers['Authorization'] = 'Bearer ${tokens.accessToken}';
+              try {
+                final retry = await dio.fetch<dynamic>(options);
+                return handler.resolve(retry);
+              } catch (_) {
+                // التكرار فشل — كمّل بالخطأ الأصلي.
+              }
+            } else {
+              await tokens.clear();
+            }
+          }
+          handler.next(error);
+        },
+      ),
+    );
+  }
+
+  final TokenStore tokens;
+  late final Dio dio;
+
+  Future<bool>? _refreshFuture;
+
+  // كل الـ 401 المتزامنة تستنى نفس عملية الـ refresh وترجع نتيجتها الحقيقية.
+  Future<bool> _refresh() => _refreshFuture ??= _doRefresh();
+
+  Future<bool> _doRefresh() async {
+    try {
+      final res = await Dio(BaseOptions(baseUrl: Env.api)).post<Map<String, dynamic>>(
+        '/auth/refresh',
+        data: {'refreshToken': tokens.refreshToken},
+      );
+      final data = res.data!;
+      await tokens.save(
+        access: data['accessToken'] as String,
+        refresh: data['refreshToken'] as String,
+      );
+      return true;
+    } catch (_) {
+      return false;
+    } finally {
+      _refreshFuture = null;
+    }
+  }
+
+  Future<T> get<T>(String path, {Map<String, dynamic>? query}) =>
+      _run(() => dio.get<T>(path, queryParameters: query));
+
+  Future<T> post<T>(String path, {Object? body}) => _run(() => dio.post<T>(path, data: body));
+
+  Future<T> patch<T>(String path, {Object? body}) => _run(() => dio.patch<T>(path, data: body));
+
+  Future<T> delete<T>(String path) => _run(() => dio.delete<T>(path));
+
+  /// بيحوّل أخطاء Dio لرسالة عربية من السيرفر (أو رسالة شبكة واضحة).
+  Future<T> _run<T>(Future<Response<T>> Function() call) async {
+    try {
+      final res = await call();
+      return res.data as T;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      final message = data is Map<String, dynamic> ? data['message'] : null;
+
+      throw ApiException(
+        switch (message) {
+          final String m => m,
+          final List<dynamic> list when list.isNotEmpty => list.first.toString(),
+          _ => switch (e.type) {
+              DioExceptionType.connectionTimeout ||
+              DioExceptionType.receiveTimeout ||
+              DioExceptionType.sendTimeout =>
+                'الاتصال بطيء — جرّب تاني',
+              DioExceptionType.connectionError => 'مافيش اتصال بالسيرفر',
+              _ => 'حصل خطأ غير متوقع',
+            },
+        },
+        statusCode: e.response?.statusCode,
+      );
+    }
+  }
+}
+
+/// بيتحقن مرة واحدة في main() بعد ما SharedPreferences تجهز.
+final tokenStoreProvider = Provider<TokenStore>((ref) => throw UnimplementedError());
+
+final apiClientProvider = Provider<ApiClient>((ref) => ApiClient(ref.watch(tokenStoreProvider)));
