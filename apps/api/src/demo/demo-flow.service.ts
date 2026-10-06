@@ -60,7 +60,7 @@ const LOW_COMMENTS = [
   'الأكل وصل بارد والطلب اتأخر',
   'نقص صنف من الطلب',
   'التغليف مكانش نضيف',
-  'الكابتن اتأخر كتير',
+  'تأخّر الكابتن كثيراً',
 ];
 
 @Injectable()
@@ -99,7 +99,7 @@ export class DemoFlowService implements OnModuleInit, OnModuleDestroy {
     }
 
     if (!this.templates.length || !this.captains.length) {
-      this.logger.warn('DEMO_FLOW شغّال بس مفيش قوالب طلبات أو كباتن صالحة — مفيش حركة');
+      this.logger.warn('DEMO_FLOW يعمل لكن لا توجد قوالب طلبات أو كباتن صالحة — لا حركة');
       return;
     }
 

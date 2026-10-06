@@ -24,7 +24,7 @@ class QBottomNavShell extends StatelessWidget {
     return Scaffold(
       body: child,
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: QColors.surface,
           border: Border(top: BorderSide(color: QColors.line)),
         ),

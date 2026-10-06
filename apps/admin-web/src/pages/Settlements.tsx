@@ -168,7 +168,7 @@ const RANGES: Array<{ value: Range; label: string }> = [
 ];
 
 // ────────────────────────────────────────────────────────────
-// تصدير CSV — من صفحة التسويات المحمّلة فعلاً (مافيش endpoint تصدير)
+// تصدير CSV — من صفحة التسويات المحمّلة فعلاً (لا يوجد endpoint تصدير)
 // ────────────────────────────────────────────────────────────
 
 const CSV_HEADERS = [
@@ -282,7 +282,7 @@ export default function Settlements() {
       void queryClient.invalidateQueries({ queryKey: ['reports'] });
       showToast(
         result.generated === 0
-          ? 'مفيش حاجة جديدة تتسوّى'
+          ? 'لا يوجد جديد للتسوية'
           : `اتعملت ${num(result.generated)} تسوية جديدة`,
       );
     },
@@ -309,7 +309,7 @@ export default function Settlements() {
               size="sm"
               icon="⬇"
               disabled={rows.length === 0}
-              title={rows.length ? 'تصدير صفحة التسويات المعروضة' : 'مافيش صفوف للتصدير'}
+              title={rows.length ? 'تصدير صفحة التسويات المعروضة' : 'لا توجد صفوف للتصدير'}
               onClick={() => downloadCsv(rows)}
             >
               تصدير كشوف
@@ -382,7 +382,7 @@ export default function Settlements() {
             <KpiCard
               label="فواتير ZATCA"
               value={DASH}
-              note="ربط ZATCA مش موجود في الـ API — مافيش جدول فواتير ولا endpoint إصدار."
+              note="ربط ZATCA غير موجود في الـ API — لا يوجد جدول فواتير ولا endpoint إصدار."
             />
           </div>
         )}
@@ -432,7 +432,7 @@ export default function Settlements() {
               ) : rows.length === 0 ? (
                 <EmptyState
                   icon="💰"
-                  title="مافيش تسويات في الفلتر ده"
+                  title="لا توجد تسويات في هذا الفلتر"
                   description="ابدأ دورة تسوية من الزر فوق، أو غيّر الحالة من الشرائح."
                 />
               ) : (
@@ -594,7 +594,7 @@ function SettlementDetailDrawer({ settlement, onClose, showToast }: SettlementDe
             variant="brand"
             size="sm"
             disabled={transferred}
-            title={transferred ? 'التسوية متحوّلة خلاص' : undefined}
+            title={transferred ? 'التسوية محوَّلة بالفعل' : undefined}
             onClick={() => setTransferOpen(true)}
           >
             {transferred ? 'تم التحويل ✓' : 'تسجيل تحويل'}
@@ -837,7 +837,7 @@ function TransferModal({ settlement, onClose, showToast }: TransferModalProps) {
         <Field
           label="مرجع الحوالة البنكية"
           required
-          hint="الرقم اللي رجع من البنك — بيتخزّن في سجل التسوية كإثبات للتحويل."
+          hint="الرقم الذي أعاده البنك — يُخزَّن في سجل التسوية كإثبات للتحويل."
           error={localError}
         >
           <TextInput
@@ -1056,7 +1056,7 @@ function CompanySettlementsCard() {
       void queryClient.invalidateQueries({ queryKey: ['company-settlements'] });
       showToast(
         result.generated === 0
-          ? 'مفيش حاجة جديدة تتسوّى'
+          ? 'لا يوجد جديد للتسوية'
           : `اتعملت ${num(result.generated)} تسوية شركة جديدة`,
       );
     },
@@ -1117,7 +1117,7 @@ function CompanySettlementsCard() {
           ) : rows.length === 0 ? (
             <EmptyState
               icon="🚚"
-              title="مافيش تسويات شركات في الفلتر ده"
+              title="لا توجد تسويات شركات في هذا الفلتر"
               description="ابدأ دورة تسوية شركات من الزر فوق، أو غيّر الحالة من الشرائح."
             />
           ) : (
@@ -1253,7 +1253,7 @@ function CompanySettlementDetailDrawer({ settlement, onClose, showToast }: Compa
             variant="brand"
             size="sm"
             disabled={transferred}
-            title={transferred ? 'التسوية متحوّلة خلاص' : undefined}
+            title={transferred ? 'التسوية محوَّلة بالفعل' : undefined}
             onClick={() => setTransferOpen(true)}
           >
             {transferred ? 'تم التحويل ✓' : 'تسجيل تحويل'}
@@ -1466,7 +1466,7 @@ function CompanyTransferModal({ settlement, onClose, showToast }: CompanyTransfe
         <Field
           label="مرجع الحوالة البنكية"
           required
-          hint="الرقم اللي رجع من البنك — بيتخزّن في سجل التسوية كإثبات للتحويل."
+          hint="الرقم الذي أعاده البنك — يُخزَّن في سجل التسوية كإثبات للتحويل."
           error={localError}
         >
           <TextInput
@@ -1850,7 +1850,7 @@ function CaptainPayModal({ distribution, onClose, showToast }: CaptainPayModalPr
 
         <Field
           label="مرجع الدفع"
-          hint="اختياري — رقم الحوالة/التحويل اللي الشركة دفعت بيه للمندوب، بيتخزّن كإثبات."
+          hint="اختياري — رقم الحوالة/التحويل الذي دفعت به الشركة للمندوب، ويُخزَّن كإثبات."
           error={localError}
         >
           <TextInput
@@ -1937,7 +1937,7 @@ function RefundsCard() {
     mutationFn: (id: string) => post<RefundListItem>(`/payments/refunds/${id}/retry`),
     onSuccess: () => {
       afterChange();
-      showToast('اتبعتت المحاولة تاني');
+      showToast('أُعيد إرسال المحاولة');
     },
     onError: (error: Error) => setFailure(error.message),
   });
@@ -1999,7 +1999,7 @@ function RefundsCard() {
           ) : rows.length === 0 ? (
             <EmptyState
               icon="↩️"
-              title="مافيش استردادات في الفلتر ده"
+              title="لا توجد استردادات في هذا الفلتر"
               description="غيّر الحالة من الشرائح فوق. الاسترداد بيتعمل من لوح تفاصيل الطلب في صفحة «الطلبات»."
             />
           ) : (

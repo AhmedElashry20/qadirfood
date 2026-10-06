@@ -24,11 +24,11 @@ class OrderSuccessScreen extends ConsumerWidget {
       backgroundColor: QColors.brand,
       body: SafeArea(
         child: order.when(
-          loading: () => const Center(
+          loading: () => Center(
             child: CircularProgressIndicator(color: QColors.ink),
           ),
           error: (error, _) => _Error(
-            message: error is ApiException ? error.message : 'ما قدرناش نجيب تفاصيل الطلب',
+            message: error is ApiException ? error.message : 'تعذّر تحميل تفاصيل الطلب',
             onRetry: () => ref.invalidate(orderProvider(orderId)),
           ),
           data: (order) => _Success(order: order),
@@ -58,15 +58,15 @@ class _Success extends StatelessWidget {
                   Container(
                     width: 110,
                     height: 110,
-                    decoration: const BoxDecoration(
-                      color: QColors.ink,
+                    decoration: BoxDecoration(
+                      color: QColors.inkSurface,
                       shape: BoxShape.circle,
                       boxShadow: kFloatShadow,
                     ),
-                    child: const Icon(Icons.check, size: 52, color: QColors.brand),
+                    child: Icon(Icons.check, size: 52, color: QColors.brand),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     'تم استلام طلبك! 🎉',
                     textAlign: TextAlign.center,
                     style: TextStyle(
@@ -79,7 +79,7 @@ class _Success extends StatelessWidget {
                   const SizedBox(height: 16),
                   Text.rich(
                     TextSpan(
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Cairo',
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
@@ -132,7 +132,7 @@ class _Success extends StatelessWidget {
                           label: 'المطعم',
                           value: Text(
                             order.restaurantName,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontFamily: 'Cairo',
                               fontSize: 13.5,
                               fontWeight: FontWeight.w800,
@@ -165,7 +165,7 @@ class _Success extends StatelessWidget {
               const SizedBox(height: 8),
               TextButton(
                 onPressed: () => context.go(QRoutes.home),
-                child: const Text(
+                child: Text(
                   'الرجوع للرئيسية',
                   style: TextStyle(
                     fontFamily: 'Cairo',
@@ -202,7 +202,7 @@ class _Error extends StatelessWidget {
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Cairo',
               fontSize: 15,
               fontWeight: FontWeight.w700,
@@ -215,7 +215,7 @@ class _Error extends StatelessWidget {
           const SizedBox(height: 8),
           TextButton(
             onPressed: () => context.go(QRoutes.myOrders),
-            child: const Text(
+            child: Text(
               'الذهاب لطلباتي',
               style: TextStyle(
                 fontFamily: 'Cairo',
@@ -245,7 +245,7 @@ class _InfoRow extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Cairo',
             fontSize: 13.5,
             fontWeight: FontWeight.w600,

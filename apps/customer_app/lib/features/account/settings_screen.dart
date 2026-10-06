@@ -9,6 +9,7 @@ import '../../core/locale.dart';
 import '../../core/router.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/common.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -30,7 +31,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         SnackBar(
           content: Text(message, style: QText.body.copyWith(color: QColors.brand)),
           behavior: SnackBarBehavior.floating,
-          backgroundColor: QColors.ink,
+          backgroundColor: QColors.inkSurface,
           duration: const Duration(seconds: 2),
         ),
       );
@@ -72,7 +73,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 onTap: () => context.push(QRoutes.language),
                 trailing: Text(
                   '${ref.watch(languageProvider).flag} ${ref.watch(languageProvider).arabicName}',
-                  style: const TextStyle(
+                  style: TextStyle(
+                    fontFamily: 'Cairo',
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: QColors.textMuted,
+                  ),
+                ),
+              ),
+              QListTile(
+                title: 'المظهر',
+                emoji: '🌓',
+                onTap: () => _pickTheme(context, ref),
+                trailing: Text(
+                  ThemeModeNotifier.labelOf(ref.watch(themeModeProvider)),
+                  style: TextStyle(
                     fontFamily: 'Cairo',
                     fontSize: 12.5,
                     fontWeight: FontWeight.w700,
@@ -89,7 +104,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const SizedBox(height: 14),
           // التفضيلات دي محفوظة في الشاشة بس — مافيش endpoint لها.
-          const _SectionLabel('الإشعارات', note: '(محلي — هيتربط بـ Firebase)'),
+          const _SectionLabel('الإشعارات', note: '(محلي — سيُربط بـ Firebase)'),
           const SizedBox(height: 8),
           QTileGroup(
             children: [
@@ -139,7 +154,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   borderRadius: BorderRadius.circular(QRadius.lg),
                   border: Border.all(color: QColors.dangerBorder, width: 1.5),
                 ),
-                child: const Text(
+                child: Text(
                   'تسجيل الخروج',
                   style: TextStyle(
                     fontFamily: 'Cairo',
@@ -167,7 +182,7 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const style = TextStyle(
+    final style = TextStyle(
       fontFamily: 'Cairo',
       fontSize: 12,
       fontWeight: FontWeight.w800,
@@ -206,7 +221,7 @@ class _SwitchRow extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Cairo',
               fontSize: 13.5,
               fontWeight: FontWeight.w700,
@@ -219,4 +234,53 @@ class _SwitchRow extends StatelessWidget {
       ),
     );
   }
+}
+
+/// منتقي المظهر — فاتح / داكن / حسب النظام.
+///
+/// شيت بدل شاشة كاملة: تلات خيارات بس، والتغيير بيبان فوراً وراء الشيت فالمستخدم
+/// يشوف النتيجة قبل ما يقفل.
+Future<void> _pickTheme(BuildContext context, WidgetRef ref) async {
+  await showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: QColors.surface,
+    builder: (sheetContext) => SafeArea(
+      child: Consumer(
+        builder: (_, sheetRef, __) {
+          final current = sheetRef.watch(themeModeProvider);
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 14),
+              Text(
+                'المظهر',
+                style: TextStyle(
+                  fontFamily: 'Cairo',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  color: QColors.ink,
+                ),
+              ),
+              const SizedBox(height: 10),
+              for (final mode in ThemeMode.values)
+                QListTile(
+                  title: ThemeModeNotifier.labelOf(mode),
+                  emoji: switch (mode) {
+                    ThemeMode.light => '☀️',
+                    ThemeMode.dark => '🌙',
+                    ThemeMode.system => '📱',
+                  },
+                  showChevron: false,
+                  trailing: current == mode
+                      ? Icon(Icons.check_rounded, size: 20, color: QColors.brand)
+                      : null,
+                  onTap: () => sheetRef.read(themeModeProvider.notifier).select(mode),
+                ),
+              const SizedBox(height: 10),
+            ],
+          );
+        },
+      ),
+    ),
+  );
 }

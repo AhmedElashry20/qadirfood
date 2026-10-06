@@ -127,7 +127,7 @@ export class ListCompaniesDto {
 // ── تسويات الشركة ──
 
 export class RunCompanySettlementDto {
-  @ApiPropertyOptional({ description: 'نهاية الفترة — لو فاضي بياخد دلوقتي' })
+  @ApiPropertyOptional({ description: 'نهاية الفترة — إن كان فارغاً يأخذ الآن' })
   @IsOptional()
   @IsDateString({}, { message: 'تاريخ نهاية الفترة غير صحيح' })
   periodEnd?: string;

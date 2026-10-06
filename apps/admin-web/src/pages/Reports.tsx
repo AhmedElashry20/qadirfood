@@ -250,7 +250,7 @@ function bucketByDay(orders: ReportOrder[]): DayBucket[] {
 }
 
 // ────────────────────────────────────────────────────────────
-// تصدير CSV — من الصفوف المحمّلة فعلاً (مافيش endpoint تصدير)
+// تصدير CSV — من الصفوف المحمّلة فعلاً (لا يوجد endpoint تصدير)
 // ────────────────────────────────────────────────────────────
 
 const CSV_HEADERS = ['اليوم', 'مبيعات مسلّمة', 'عدد الطلبات المسلّمة'];
@@ -340,7 +340,7 @@ export default function Reports() {
             >
               Excel
             </Button>
-            <Button variant="outline" size="sm" icon="⬇" disabled title="مافيش endpoint لتوليد PDF في الـ API">
+            <Button variant="outline" size="sm" icon="⬇" disabled title="لا يوجد endpoint لتوليد PDF في الـ API">
               PDF
             </Button>
           </>
@@ -389,7 +389,7 @@ export default function Reports() {
               value={derived.avgDeliveryMinutes === null ? DASH : durationAr(derived.avgDeliveryMinutes)}
               note={
                 derived.avgDeliveryMinutes === null
-                  ? 'مافيش طلبات مسلّمة بطوابع وقت في العيّنة'
+                  ? 'لا توجد طلبات مسلَّمة بطوابع وقت في العيّنة'
                   : `${SAMPLE_NOTE} · ${ltr(num(derived.deliveredWithTimes))} طلب مسلّم`
               }
             />
@@ -415,7 +415,7 @@ export default function Reports() {
               }
               note={
                 derived.peakHour === null
-                  ? 'مافيش طلبات في العيّنة'
+                  ? 'لا توجد طلبات في العيّنة'
                   : `${SAMPLE_NOTE} · ${ltr(num(derived.peakHourCount))} طلب في الساعة دي`
               }
             />
@@ -450,7 +450,7 @@ export default function Reports() {
             {sample.isPending ? (
               <Loading rows={3} height={34} />
             ) : derived.topBranches.length === 0 ? (
-              <EmptyState icon="🍔" title="مافيش طلبات مسلّمة في العيّنة" />
+              <EmptyState icon="🍔" title="لا توجد طلبات مسلَّمة في العيّنة" />
             ) : (
               <ol className="flex flex-col">
                 {derived.topBranches.map((branch, index) => (
@@ -468,7 +468,7 @@ export default function Reports() {
             {sample.isPending ? (
               <Loading rows={3} height={34} />
             ) : derived.topCaptains.length === 0 ? (
-              <EmptyState icon="🛵" title="مافيش كباتن في العيّنة" />
+              <EmptyState icon="🛵" title="لا يوجد كباتن في العيّنة" />
             ) : (
               <ol className="flex flex-col">
                 {derived.topCaptains.map((captain, index) => (
@@ -491,7 +491,7 @@ export default function Reports() {
             {sample.isPending ? (
               <Loading rows={3} height={34} />
             ) : derived.cancelReasons.length === 0 ? (
-              <EmptyState icon="✓" title="مافيش إلغاء ولا رفض في العيّنة" />
+              <EmptyState icon="✓" title="لا يوجد إلغاء ولا رفض في العيّنة" />
             ) : (
               <CancelReasons reasons={derived.cancelReasons} />
             )}
@@ -514,8 +514,8 @@ function SalesBars({ buckets }: { buckets: DayBucket[] }) {
     return (
       <EmptyState
         icon="📊"
-        title="مافيش مبيعات مسلّمة في آخر ٧ أيام"
-        description="الأعمدة مبنية على الطلبات المحمّلة فعلاً — مافيش تعبئة بأرقام تقديرية."
+        title="لا توجد مبيعات مسلَّمة في آخر ٧ أيام"
+        description="الأعمدة مبنية على الطلبات المحمَّلة فعلاً — دون تعبئة بأرقام تقديرية."
       />
     );
   }

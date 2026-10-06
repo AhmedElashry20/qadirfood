@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Module,
   Param,
@@ -14,6 +15,7 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 import { CustomerService } from './customer.service';
+import { LoyaltyService } from './loyalty.service';
 import {
   BrowseBranchesDto,
   CreateAddressDto,
@@ -21,6 +23,8 @@ import {
   UpdateAddressDto,
   UpdateMeDto,
   ValidateCouponDto,
+  ApplyReferralDto,
+  QuoteRedemptionDto,
 } from './customer.dto';
 import { CurrentUser, JwtAuthGuard, Roles, RolesGuard, type AuthUser } from '../common';
 
@@ -30,7 +34,10 @@ import { CurrentUser, JwtAuthGuard, Roles, RolesGuard, type AuthUser } from '../
 @Roles(UserRole.CUSTOMER)
 @Controller('customer')
 export class CustomerController {
-  constructor(private readonly service: CustomerService) {}
+  constructor(
+    private readonly service: CustomerService,
+    private readonly loyaltyService: LoyaltyService,
+  ) {}
 
   // ── الملف الشخصي ──
 
@@ -135,11 +142,50 @@ export class CustomerController {
   validateCoupon(@Body() dto: ValidateCouponDto) {
     return this.service.validateCoupon(dto);
   }
+
+  // ── نقاط الولاء ──
+
+  @Get('loyalty')
+  @ApiOperation({ summary: 'رصيد نقاط الولاء وقيمته بالريال وكشف الحركات' })
+  loyalty(@CurrentUser() user: AuthUser) {
+    return this.loyaltyService.summary(this.requireCustomer(user));
+  }
+
+  @Post('loyalty/quote')
+  @ApiOperation({ summary: 'عدد النقاط القابلة للاستبدال على مجموع معيّن (قبل التأكيد)' })
+  loyaltyQuote(@CurrentUser() user: AuthUser, @Body() dto: QuoteRedemptionDto) {
+    return this.loyaltyService
+      .quoteRedemption(this.requireCustomer(user), dto.points, dto.maxDiscountSar)
+      .then((r) => ({ points: r.points, discountSar: r.discountSar.toNumber() }));
+  }
+
+  // ── الإحالة ──
+
+  @Get('referral')
+  @ApiOperation({ summary: 'كود إحالتي وعدد المدعوين ومكافأة الدعوة' })
+  referral(@CurrentUser() user: AuthUser) {
+    return this.loyaltyService.myReferral(this.requireCustomer(user));
+  }
+
+  @Post('referral/apply')
+  @ApiOperation({ summary: 'استخدام كود إحالة — قبل أول طلب فقط' })
+  applyReferral(@CurrentUser() user: AuthUser, @Body() dto: ApplyReferralDto) {
+    return this.loyaltyService.applyReferralCode(this.requireCustomer(user), dto.code);
+  }
+
+  /**
+   * التوكن ممكن ييجي بدور CUSTOMER من غير صف `Customer` مربوط. لو سبناها،
+   * Prisma بتتجاهل الشرط `undefined` وترجّع بيانات عميل تاني — تسريب.
+   */
+  private requireCustomer(user: AuthUser): string {
+    if (!user.customerId) throw new ForbiddenException('الجلسة غير مرتبطة بحساب عميل');
+    return user.customerId;
+  }
 }
 
 @Module({
-  providers: [CustomerService],
+  providers: [CustomerService, LoyaltyService],
   controllers: [CustomerController],
-  exports: [CustomerService],
+  exports: [CustomerService, LoyaltyService],
 })
 export class CustomerModule {}

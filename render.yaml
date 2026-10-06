@@ -1,0 +1,49 @@
+# نشر الـ API على Render (الخطة المجانية).
+#
+# القاعدة و Redis **خارج** هذا الملف عن قصد: خطة Render المجانية لا توفّر
+# PostGIS، والنظام لا يعمل بدونه (كل حسابات المسافات والمناطق مبنية عليه).
+# فالقاعدة على Neon و Redis على Upstash — يُضبط رابطاهما يدوياً في لوحة Render
+# لأنهما يحملان كلمات مرور ولا يصحّ وضعهما في ملف داخل المستودع.
+services:
+  - type: web
+    name: qadirfood-api
+    runtime: node
+    plan: free
+    region: frankfurt # الأقرب للسعودية ضمن مناطق الخطة المجانية
+    branch: main
+
+    # سياق البناء هو جذر المستودع لأن الـ API يعتمد على حزمة @delivery/shared.
+    buildCommand: npm ci && npm run build -w @delivery/shared && npx prisma generate --schema apps/api/prisma/schema.prisma && npm run build -w @delivery/api
+    startCommand: node apps/api/dist/main.js
+
+    healthCheckPath: /api/health
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000 # Render يمرّر المنفذ عبر PORT؛ التطبيق يقرأه
+
+      # أصول مسموح لها بمناداة الـ API. دومين الاستضافة المجانية + نطاق محلي
+      # للتجربة. أي أصل غير مذكور هنا يُرفض في المتصفح.
+      - key: CORS_ORIGINS
+        value: https://qadirfood.ct.ws,http://localhost:5174,http://localhost:5180
+
+      # ── تُضبط يدوياً في لوحة Render (تحمل كلمات مرور) ──
+      - key: DATABASE_URL
+        sync: false # من Neon — لازم ?sslmode=require
+      - key: REDIS_URL
+        sync: false # من Upstash — ابدأ بـ rediss:// (بـ s) للتشفير
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+
+      # عرض فقط: يُظهر رمز التحقق في الرد بدل إرسال رسالة فعلية، فيستطيع
+      # الزائر الدخول بلا رقم جوال حقيقي. يجب أن يبقى 0 في أي نظام حقيقي.
+      - key: OTP_DEV_ECHO
+        value: '1'
+
+      # Swagger مقفل افتراضياً في الإنتاج — يُفتح هنا لأن الغرض عرض المنصة.
+      - key: ENABLE_SWAGGER
+        value: '1'

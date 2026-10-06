@@ -36,7 +36,7 @@ class OptionGroupSelector extends StatelessWidget {
                   color: QColors.tintStrong,
                   borderRadius: BorderRadius.circular(QRadius.pill),
                 ),
-                child: const Text(
+                child: Text(
                   'مطلوب',
                   style: TextStyle(
                     fontFamily: 'Cairo',

@@ -249,6 +249,10 @@ enum AuditAction {
   STAFF_CREATE // إضافة موظف لوحة (أدمن)
   STAFF_UPDATE // تعديل/تفعيل/تعطيل موظف
   FACE_REVIEW // مراجعة أدمن لسيلفي التحقق اليومي (اعتماد/رفض)
+  CAPTAIN_SUSPEND // إيقاف كابتن — منع فوري للدخول والتوزيع
+  CAPTAIN_REINSTATE // رفع الإيقاف
+  RESTAURANT_COMMISSION // تعديل نسبة عمولة المنصة على مطعم
+  RESTAURANT_TOGGLE // تفعيل/إيقاف مطعم أو فرع من اللوحة
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -309,14 +313,60 @@ model Customer {
   userId        String  @unique
   user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   walletBalance Decimal @default(0) @db.Decimal(10, 2)
+  /// رصيد نقاط الولاء. **المصدر الوحيد للرصيد**، و`loyalty_transactions` هو
+  /// الدفتر اللي بيفسّره — نفس علاقة `Captain.walletBalance` بدفتر المحفظة.
+  loyaltyPoints Int     @default(0)
+
+  /// كود إحالة العميل — بيتولّد أول مرة يطلبه، فريد على مستوى المنصة.
+  /// null = لسه ماطلبهوش.
+  referralCode  String? @unique
+  /// العميل اللي دعاه (صاحب الكود اللي استخدمه). null = جا من غير دعوة.
+  /// مابيتغيّرش بعد أول طلب — الإحالة بتتحسب مرة واحدة.
+  referredById  String?
+  referredBy    Customer?  @relation("CustomerReferrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals     Customer[] @relation("CustomerReferrals")
+  /// اتصرفت مكافأة الإحالة خلاص؟ بيمنع صرفها تاني لو العميل عمل طلبات كتير.
+  referralRewarded Boolean @default(false)
 
   addresses Address[]
   orders    Order[]
   reviews   Review[]
   favorites Favorite[]
   tickets   SupportTicket[]
+  loyaltyEntries LoyaltyTransaction[]
 
+  @@index([referredById])
   @@map("customers")
+}
+
+/// حركة في دفتر نقاط الولاء — زي دفتر محفظة الكابتن: كل تغيير في الرصيد ليه سطر.
+model LoyaltyTransaction {
+  id            String           @id @default(uuid())
+  customerId    String
+  customer      Customer         @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  type          LoyaltyEntryType
+  /// موجب = نقاط داخلة · سالب = نقاط مستهلكة.
+  points        Int
+  /// الرصيد بعد الحركة — عشان الكشف يبان صح من غير إعادة حساب من الأول.
+  balanceAfter  Int
+  descriptionAr String
+  orderId       String?
+  order         Order?           @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  createdAt     DateTime         @default(now())
+
+  /// منع التكرار: الطلب الواحد بياخد سطر واحد من كل نوع. إعادة محاولة التسليم
+  /// أو تسليم مكرر مايضاعفش نقاط العميل.
+  @@unique([orderId, customerId, type])
+  @@index([customerId, createdAt])
+  @@map("loyalty_transactions")
+}
+
+enum LoyaltyEntryType {
+  EARN // نقاط من طلب تم تسليمه
+  REDEEM // استبدال نقاط كخصم على طلب
+  REFERRAL // مكافأة إحالة (للداعي أو للمدعو)
+  ADJUSTMENT // تسوية يدوية من الأدمن
+  REVERSAL // رجوع نقاط استبدال لطلب اتلغى
 }
 
 model Address {
@@ -846,6 +896,18 @@ model Order {
   total         Decimal @db.Decimal(10, 2)
   commission    Decimal @default(0) @db.Decimal(10, 2) // عمولة المنصة من المطعم
   captainPayout Decimal @default(0) @db.Decimal(10, 2)
+  /// إكرامية المندوب — **برّه `total` عن قصد**.
+  ///
+  /// `total` هو قيمة التوريد الخاضع للضريبة، والفاتورة الضريبية بتاخده كإجمالي
+  /// شامل الضريبة. لو الإكرامية دخلت جواه، الضريبة المعلنة مابتطابقش الإجمالي
+  /// — خلل التزام ضريبي. الإكرامية مش توريد من المطعم ولا من المنصة: مافيش
+  /// عليها ضريبة ولا عمولة، وبتروح ١٠٠٪ للمندوب.
+  ///
+  /// المبلغ المحصّل من العميل = `total + tipAmount` (شوف `chargeableTotal`).
+  tipAmount     Decimal @default(0) @db.Decimal(10, 2)
+  /// نقاط الولاء اللي العميل استبدلها في الطلب ده. قيمتها بالريال داخلة جوه
+  /// `discount` — فالضريبة والعمولة بيتحسبوا صح من غير مسار خاص.
+  pointsRedeemed Int    @default(0)
 
   paymentMethod PaymentMethod
   paymentStatus PaymentStatus @default(PENDING)
@@ -857,6 +919,17 @@ model Order {
 
   // طوابع زمنية لكل انتقال حالة (للتقارير و SLA)
   placedAt    DateTime  @default(now())
+  /// طلب مجدول: وقت التسليم اللي العميل طلبه. null = طلب فوري.
+  /// الطلب بيفضل PENDING ومخفي عن المطعم لحد وقت الإطلاق — من غير حالة جديدة
+  /// عشان آلة الانتقالات تفضل زي ما هي.
+  scheduledFor DateTime?
+  /// الوقت **المخطّط** لإطلاق الطلب للمطعم = `scheduledFor` − (تحضير + توصيل).
+  /// بيتحسب مرة عند الإنشاء ومابيتغيّرش.
+  releaseAt    DateTime?
+  /// الوقت **الفعلي** اللي الطلب اتعرض فيه للمطعم. null = لسه ماوصلهوش.
+  /// منفصل عن `releaseAt` عشان الإطلاق يبقى idempotent: مؤقت اشتغل ودورة
+  /// استرجاع لقيت نفس الطلب مايبعتوش إشعارين للمطعم.
+  releasedAt   DateTime?
   acceptedAt  DateTime?
   readyAt     DateTime?
   assignedAt  DateTime?
@@ -884,6 +957,8 @@ model Order {
   walletEntries WalletTransaction[]
   tripOffers    TripOffer[]
   tickets       SupportTicket[]
+  loyaltyEntries LoyaltyTransaction[]
+  messages      OrderMessage[]
 
   @@index([branchId, status])
   @@index([settlementId])
@@ -891,6 +966,9 @@ model Order {
   @@index([captainId, status])
   @@index([customerId, placedAt])
   @@index([status, placedAt])
+  /// استرجاع الطلبات المجدولة اللي لسه ماتطلقتش — بيتنادى عند إقلاع السيرفر
+  /// وفي كل دورة إطلاق، فمحتاج فهرس.
+  @@index([releaseAt, releasedAt])
   @@map("orders")
 }
 
@@ -1116,6 +1194,33 @@ model TicketMessage {
 
   @@index([ticketId])
   @@map("ticket_messages")
+}
+
+/// رسالة في محادثة الطلب بين العميل والمندوب.
+///
+/// منفصلة عن `TicketMessage` عن قصد: التذكرة قناة دعم بتعيش بعد الطلب وبيقرأها
+/// موظف، والمحادثة دي **مؤقتة ومربوطة برحلة واحدة** — بتتقفل بالتسليم. خلطهم
+/// كان هيخلّي كل «فين الطلب؟» تذكرة دعم في طابور الموظفين.
+model OrderMessage {
+  id         String           @id @default(uuid())
+  orderId    String
+  order      Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  senderRole OrderChatRole
+  /// `userId` للمرسل — null لرسائل النظام.
+  senderId   String?
+  body       String
+  /// أول مرة الطرف التاني قرأها. null = لسه ماتقرأتش.
+  readAt     DateTime?
+  createdAt  DateTime         @default(now())
+
+  @@index([orderId, createdAt])
+  @@map("order_messages")
+}
+
+enum OrderChatRole {
+  CUSTOMER
+  CAPTAIN
+  SYSTEM
 }
 
 /// مفضلة العميل — فرع واحد لكل صف.

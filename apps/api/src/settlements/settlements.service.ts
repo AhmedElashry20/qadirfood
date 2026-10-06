@@ -210,7 +210,7 @@ export class SettlementsService {
         SELECT id, status FROM settlements WHERE id = ${id} FOR UPDATE`;
       if (!settlement) throw new NotFoundException('التسوية غير موجودة');
       if (settlement.status === SettlementStatus.TRANSFERRED) {
-        throw new ConflictException('التسوية متحوّلة خلاص');
+        throw new ConflictException('التسوية محوَّلة بالفعل');
       }
 
       const updated = await tx.settlement.update({
@@ -382,6 +382,6 @@ export class SettlementsService {
   }
 
   private assertAdmin(user: AuthUser) {
-    if (user.role !== UserRole.ADMIN) throw new ForbiddenException('التسويات للأدمن بس');
+    if (user.role !== UserRole.ADMIN) throw new ForbiddenException('التسويات متاحة للإدارة فقط');
   }
 }

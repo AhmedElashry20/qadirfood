@@ -52,7 +52,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          backgroundColor: QColors.ink,
+          backgroundColor: QColors.inkSurface,
           content: Text(message, style: QText.body.copyWith(color: QColors.brand)),
         ),
       );
@@ -102,7 +102,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final auth = ref.watch(authProvider);
 
     return Scaffold(
-      backgroundColor: QColors.ink,
+      backgroundColor: QColors.inkSurface,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) => SingleChildScrollView(
@@ -177,7 +177,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'أدر مطعمك وطلباتك من مكان واحد',
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -194,7 +194,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget _branchPicker(List<BranchOption> branches) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'الفرع (حساب متعدد الفروع)',
             style: TextStyle(
               fontFamily: 'Cairo',
@@ -229,12 +229,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             padding: const EdgeInsets.symmetric(vertical: 16),
             alignment: Alignment.center,
             child: _loading
-                ? const SizedBox(
+                ? SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2.4, color: QColors.ink),
                   )
-                : const Text(
+                : Text(
                     'دخول',
                     style: TextStyle(
                       fontFamily: 'Cairo',
@@ -251,7 +251,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget _footerLinks() => Center(
         child: GestureDetector(
           onTap: () => _snack('تواصل مع فريق قادر فود'),
-          child: const Text.rich(
+          child: Text.rich(
             TextSpan(
               children: [
                 TextSpan(
@@ -345,7 +345,7 @@ class _DarkFieldState extends State<_DarkField> {
       children: [
         Text(
           widget.label,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Cairo',
             fontSize: 13,
             fontWeight: FontWeight.w700,
@@ -376,7 +376,7 @@ class _DarkFieldState extends State<_DarkField> {
               fontWeight: FontWeight.w600,
               color: Colors.white,
             ),
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               isDense: true,
               filled: false,
               border: InputBorder.none,

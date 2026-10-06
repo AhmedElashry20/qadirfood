@@ -76,7 +76,7 @@ enum CaptainStatus {
 enum DocumentStatus {
   accepted('✓ تم القبول'),
   underReview('⏳ قيد المراجعة — عادة 24 ساعة'),
-  missing('لسه مترفعتش'),
+  missing('لم تُرفَع بعد'),
   rejected('✕ مرفوضة — أعد الرفع');
 
   const DocumentStatus(this.ar);

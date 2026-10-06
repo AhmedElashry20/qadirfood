@@ -9,6 +9,8 @@ import '../models/cart.dart';
 import '../models/menu_item.dart';
 import '../models/order.dart';
 import '../models/restaurant.dart';
+import '../models/loyalty.dart';
+import '../models/order_chat.dart';
 import '../models/support_ticket.dart';
 
 // ─────────────────────────── أنواع مساعدة ───────────────────────────
@@ -214,7 +216,7 @@ enum BranchSort {
 // ─────────────────────────── الدخول ───────────────────────────
 
 class AuthRepository {
-  AuthRepository(this._api);
+  const AuthRepository(this._api);
 
   final ApiClient _api;
 
@@ -259,7 +261,7 @@ class AuthRepository {
 // ─────────────────────────── العميل ───────────────────────────
 
 class CustomerRepository {
-  CustomerRepository(this._api);
+  const CustomerRepository(this._api);
 
   final ApiClient _api;
 
@@ -280,6 +282,40 @@ class CustomerRepository {
           },
         ),
       );
+
+  // ── نقاط الولاء والإحالة ──
+
+  /// GET /customer/loyalty
+  Future<LoyaltySummary> loyalty() async =>
+      LoyaltySummary.fromJson(await _api.get<Map<String, dynamic>>('/customer/loyalty'));
+
+  /// POST /customer/loyalty/quote — قد إيه نقاط تنفع على السقف ده.
+  ///
+  /// [maxDiscountSar] = مجموع السلة ناقص خصم الكوبون. السيرفر بيقيّد النتيجة
+  /// بالرصيد وبالسقف وبالحد الأدنى، فالرقم الراجع هو اللي ينفع فعلاً.
+  Future<RedemptionQuote> loyaltyQuote({
+    required int points,
+    required double maxDiscountSar,
+  }) async =>
+      RedemptionQuote.fromJson(
+        await _api.post<Map<String, dynamic>>(
+          '/customer/loyalty/quote',
+          body: {'points': points, 'maxDiscountSar': maxDiscountSar},
+        ),
+      );
+
+  /// GET /customer/referral — بيولّد الكود أول مرة يتنادى.
+  Future<ReferralInfo> referral() async =>
+      ReferralInfo.fromJson(await _api.get<Map<String, dynamic>>('/customer/referral'));
+
+  /// POST /customer/referral/apply — بيرمي [ApiException] برسالة السيرفر لو
+  /// الكود غلط أو العميل عمل طلب قبل كده.
+  Future<void> applyReferral(String code) async {
+    await _api.post<Map<String, dynamic>>(
+      '/customer/referral/apply',
+      body: {'code': code},
+    );
+  }
 
   // ── العناوين ──
 
@@ -455,7 +491,7 @@ class CustomerRepository {
 // ─────────────────────────── الطلبات ───────────────────────────
 
 class OrdersRepository {
-  OrdersRepository(this._api);
+  const OrdersRepository(this._api);
 
   final ApiClient _api;
 
@@ -470,6 +506,9 @@ class OrdersRepository {
     String? customerNotes,
     String? restaurantName,
     String? restaurantImageUrl,
+    double? tipAmount,
+    DateTime? scheduledFor,
+    int? redeemPoints,
   }) async {
     final res = await _api.post<Map<String, dynamic>>(
       '/orders',
@@ -479,6 +518,12 @@ class OrdersRepository {
         'paymentMethod': paymentMethod,
         if (couponCode != null && couponCode.isNotEmpty) 'couponCode': couponCode,
         if (customerNotes != null && customerNotes.isNotEmpty) 'customerNotes': customerNotes,
+        // الإكرامية للدفع الإلكتروني بس — الـ API بيرفضها على الكاش.
+        if (tipAmount != null && tipAmount > 0) 'tipAmount': tipAmount,
+        // وقت التسليم المطلوب بالـ UTC — الـ API بيقرا ISO.
+        if (scheduledFor != null) 'scheduledFor': scheduledFor.toUtc().toIso8601String(),
+        // نقاط الولاء — السيرفر بيقيّدها بالرصيد وبسقف الطلب تاني.
+        if (redeemPoints != null && redeemPoints > 0) 'redeemPoints': redeemPoints,
         'items': [for (final item in items) item.toJson()],
       },
     );
@@ -547,6 +592,26 @@ class OrdersRepository {
         },
       );
 
+  // ── محادثة الطلب مع المندوب ──
+
+  /// GET /orders/:id/messages
+  Future<OrderChat> chat(String orderId) async => OrderChat.fromJson(
+        await _api.get<Map<String, dynamic>>('/orders/$orderId/messages'),
+      );
+
+  /// POST /orders/:id/messages — بيرمي [ApiException] لو المحادثة مقفولة.
+  Future<void> sendMessage(String orderId, String body) async {
+    await _api.post<Map<String, dynamic>>(
+      '/orders/$orderId/messages',
+      body: {'body': body},
+    );
+  }
+
+  /// PATCH /orders/:id/messages/read
+  Future<void> markChatRead(String orderId) async {
+    await _api.patch<Map<String, dynamic>>('/orders/$orderId/messages/read');
+  }
+
   /// GET /orders/:id/reorder
   Future<ReorderDraft> reorder(String id) async =>
       ReorderDraft.fromJson(await _api.get<Map<String, dynamic>>('/orders/$id/reorder'));
@@ -555,7 +620,7 @@ class OrdersRepository {
 // ─────────────────────────── الدعم (التذاكر) ───────────────────────────
 
 class SupportRepository {
-  SupportRepository(this._api);
+  const SupportRepository(this._api);
 
   final ApiClient _api;
 

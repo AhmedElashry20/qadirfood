@@ -48,6 +48,25 @@ class TicketMessageEvent {
   final DateTime? at;
 }
 
+/// رسالة جديدة في محادثة الطلب (order:message) — من المندوب أو صدى رسالة العميل.
+class OrderMessageEvent {
+  const OrderMessageEvent({
+    required this.id,
+    required this.orderId,
+    required this.senderRole,
+    required this.body,
+    this.at,
+  });
+
+  final String id;
+  final String orderId;
+
+  /// CUSTOMER · CAPTAIN · SYSTEM
+  final String senderRole;
+  final String body;
+  final DateTime? at;
+}
+
 /// حالة تذكرة اتغيّرت (ticket:updated).
 class TicketUpdatedEvent {
   const TicketUpdatedEvent({required this.ticketId, required this.status});
@@ -69,6 +88,7 @@ class SocketService {
   final _location = StreamController<CaptainLocationEvent>.broadcast();
   final _ticketMessage = StreamController<TicketMessageEvent>.broadcast();
   final _ticketUpdated = StreamController<TicketUpdatedEvent>.broadcast();
+  final _orderMessage = StreamController<OrderMessageEvent>.broadcast();
 
   Stream<OrderStatusEvent> get statusChanges => _status.stream;
   Stream<CaptainLocationEvent> get captainLocations => _location.stream;
@@ -76,6 +96,9 @@ class SocketService {
   /// رسائل التذاكر — بتوصل كلها على غرفة العميل (customer:{id}) من غير join.
   Stream<TicketMessageEvent> get ticketMessages => _ticketMessage.stream;
   Stream<TicketUpdatedEvent> get ticketUpdates => _ticketUpdated.stream;
+
+  /// رسايل محادثة الطلب مع المندوب.
+  Stream<OrderMessageEvent> get orderMessages => _orderMessage.stream;
 
   bool get isConnected => _socket?.connected ?? false;
 
@@ -134,6 +157,19 @@ class SocketService {
           body: map['body'] as String? ?? '',
           internal: map['internal'] as bool? ?? false,
           at: _parseAt(map['at']),
+        ),
+      );
+    });
+
+    _socket!.on('order:message', (data) {
+      final map = Map<String, dynamic>.from(data as Map);
+      _orderMessage.add(
+        OrderMessageEvent(
+          id: map['id'] as String? ?? '',
+          orderId: map['orderId'] as String? ?? '',
+          senderRole: map['senderRole'] as String? ?? 'SYSTEM',
+          body: map['body'] as String? ?? '',
+          at: _parseAt(map['createdAt']),
         ),
       );
     });

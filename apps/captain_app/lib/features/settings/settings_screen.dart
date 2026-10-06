@@ -25,6 +25,7 @@ import '../../data/captain_repository.dart';
 import '../../models/captain.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/captain_status_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/common.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -63,9 +64,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       builder: (dialogContext) => AlertDialog(
         backgroundColor: QColors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(QRadius.xl)),
-        title: const Text('تسجيل الخروج', style: QText.section),
-        content: const Text(
-          'متأكد إنك عايز تسجّل خروج؟ هتحتاج ترجع تدخل برقم الجوال والرمز.',
+        title: Text('تسجيل الخروج', style: QText.section),
+        content: Text(
+          'هل تريد تسجيل الخروج؟ ستحتاج إلى الدخول مرة أخرى برقم الجوال والرمز.',
           style: QText.bodyMuted,
         ),
         actions: [
@@ -133,7 +134,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.logout, size: 19, color: QColors.danger),
+                      Icon(Icons.logout, size: 19, color: QColors.danger),
                       const SizedBox(width: 8),
                       Text(
                         'تسجيل الخروج',
@@ -169,9 +170,9 @@ class _Hero extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      decoration: const BoxDecoration(
-        color: QColors.ink,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
+      decoration: BoxDecoration(
+        color: QColors.inkSurface,
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
       ),
       child: SafeArea(
         bottom: false,
@@ -197,7 +198,7 @@ class _Hero extends StatelessWidget {
                     width: 64,
                     height: 64,
                     alignment: Alignment.center,
-                    decoration: const BoxDecoration(color: QColors.brand, shape: BoxShape.circle),
+                    decoration: BoxDecoration(color: QColors.brand, shape: BoxShape.circle),
                     child: Text(
                       initial,
                       style: QText.display.copyWith(fontSize: 26, color: QColors.ink),
@@ -218,7 +219,7 @@ class _Hero extends StatelessWidget {
                         // المركبة من `GET /captains/me`؛ لو النداء رمى بنعرض رسالة
                         // السيرفر زي ما هي مش بنخترع بيانات فاضية.
                         captainAsync.when(
-                          loading: () => const Text(
+                          loading: () => Text(
                             'بنجيب بياناتك…',
                             style: TextStyle(
                               fontFamily: 'Cairo',
@@ -228,10 +229,10 @@ class _Hero extends StatelessWidget {
                             ),
                           ),
                           error: (error, _) => Text(
-                            error is ApiException ? error.message : 'مش قادرين نجيب بياناتك',
+                            error is ApiException ? error.message : 'تعذّر تحميل بياناتك',
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontFamily: 'Cairo',
                               fontSize: 11.5,
                               fontWeight: FontWeight.w600,
@@ -242,7 +243,7 @@ class _Hero extends StatelessWidget {
                             value.vehicleLabel,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontFamily: 'Cairo',
                               fontSize: 12.5,
                               fontWeight: FontWeight.w600,
@@ -375,7 +376,7 @@ class _Stat extends StatelessWidget {
           Text(
             label,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Cairo',
               fontSize: 11.5,
               fontWeight: FontWeight.w700,
@@ -388,7 +389,9 @@ class _Stat extends StatelessWidget {
   }
 }
 
-class _Menu extends StatelessWidget {
+/// `ConsumerWidget` مش `StatelessWidget`: صف «المظهر» محتاج يقرا الوضع الحالي
+/// من الـ provider ويعرضه جنب العنوان.
+class _Menu extends ConsumerWidget {
   const _Menu({required this.onUnavailable, required this.onEditVehicle, this.captain});
 
   final ValueChanged<String> onUnavailable;
@@ -396,7 +399,7 @@ class _Menu extends StatelessWidget {
   final Captain? captain;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return QTileGroup(
       children: [
         QListTile(
@@ -417,13 +420,22 @@ class _Menu extends StatelessWidget {
           subtitle: 'إدارة حسابات الاستلام والسحب',
           onTap: () => context.push(QRoutes.wallet),
         ),
+        QListTile(
+          emoji: '🌓',
+          title: 'المظهر',
+          onTap: () => _pickTheme(context, ref),
+          trailing: Text(
+            ThemeModeNotifier.labelOf(ref.watch(themeModeProvider)),
+            style: QText.tiny.copyWith(color: QColors.textMuted),
+          ),
+        ),
         QListTile(emoji: '🗓', title: 'الورديات', onTap: () => context.push(QRoutes.shift)),
         QListTile(emoji: '💰', title: 'الأرباح', onTap: () => context.push(QRoutes.earnings)),
         QListTile(emoji: '🧾', title: 'سجل الطلبات', onTap: () => context.push(QRoutes.trips)),
         QListTile(
           emoji: '🎧',
           title: 'دعم الكباتن',
-          subtitle: 'مافيش مسار للدعم ولا للتذاكر',
+          subtitle: 'لا يوجد مسار للدعم ولا للتذاكر',
           onTap: () => onUnavailable('الدعم محتاج API'),
         ),
       ],
@@ -484,7 +496,7 @@ class _VehicleSheetState extends ConsumerState<_VehicleSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('تعديل المركبة', style: QText.section),
+              Text('تعديل المركبة', style: QText.section),
               const SizedBox(height: 14),
               Text('نوع المركبة', style: QText.fieldLabel),
               const SizedBox(height: 8),
@@ -558,10 +570,10 @@ class _NotificationsCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'مافيش endpoint لتفضيلات الإشعارات — الاختيارات دي مابتتحفظش على السيرفر',
+            'لا يوجد endpoint لتفضيلات الإشعارات — هذه الاختيارات لا تُحفظ على الخادم',
             style: QText.tiny.copyWith(color: QColors.faint, fontWeight: FontWeight.w600),
           ),
-          const Divider(color: QColors.line, height: 20),
+          Divider(color: QColors.line, height: 20),
           Row(
             children: [
               Expanded(
@@ -590,11 +602,60 @@ void _snack(BuildContext context, String message) {
     ..hideCurrentSnackBar()
     ..showSnackBar(
       SnackBar(
-        backgroundColor: QColors.ink,
+        backgroundColor: QColors.inkSurface,
         content: Text(
           message,
           style: QText.body.copyWith(fontSize: 14, color: QColors.brand),
         ),
       ),
     );
+}
+
+/// منتقي المظهر — فاتح / داكن / حسب النظام.
+///
+/// شيت بدل شاشة كاملة: تلات خيارات بس، والتغيير بيبان فوراً وراء الشيت فالمستخدم
+/// يشوف النتيجة قبل ما يقفل.
+Future<void> _pickTheme(BuildContext context, WidgetRef ref) async {
+  await showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: QColors.surface,
+    builder: (_) => SafeArea(
+      child: Consumer(
+        builder: (_, sheetRef, __) {
+          final current = sheetRef.watch(themeModeProvider);
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 14),
+              Text(
+                'المظهر',
+                style: TextStyle(
+                  fontFamily: 'Cairo',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  color: QColors.ink,
+                ),
+              ),
+              const SizedBox(height: 10),
+              for (final mode in ThemeMode.values)
+                QListTile(
+                  title: ThemeModeNotifier.labelOf(mode),
+                  emoji: switch (mode) {
+                    ThemeMode.light => '☀️',
+                    ThemeMode.dark => '🌙',
+                    ThemeMode.system => '📱',
+                  },
+                  showChevron: false,
+                  trailing: current == mode
+                      ? Icon(Icons.check_rounded, size: 20, color: QColors.brand)
+                      : null,
+                  onTap: () => sheetRef.read(themeModeProvider.notifier).select(mode),
+                ),
+              const SizedBox(height: 10),
+            ],
+          );
+        },
+      ),
+    ),
+  );
 }

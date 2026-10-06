@@ -306,11 +306,11 @@ export default function Support() {
               ) : rows.length === 0 ? (
                 <EmptyState
                   icon="🎧"
-                  title={hasFilter ? 'مافيش تذاكر مطابقة' : `مافيش تذاكر ${STATUS_META[tab].label}`}
+                  title={hasFilter ? 'لا توجد تذاكر مطابقة' : `مافيش تذاكر ${STATUS_META[tab].label}`}
                   description={
                     hasFilter
                       ? 'غيّر التصنيف أو الأولوية أو البحث من الشريط العلوي.'
-                      : 'أول ما عميل يفتح شكوى في الحالة دي هتبان هنا فوراً.'
+                      : 'بمجرد أن يفتح عميل شكوى في هذه الحالة ستظهر هنا فوراً.'
                   }
                 />
               ) : (
@@ -346,7 +346,7 @@ export default function Support() {
                 <EmptyState
                   icon="💬"
                   title="اختر تذكرة"
-                  description="افتح تذكرة من القائمة عشان تشوف المحادثة وترد وتغيّر الحالة والإسناد."
+                  description="افتح تذكرة من القائمة لعرض المحادثة والرد وتغيير الحالة والإسناد."
                 />
               </>
             )}

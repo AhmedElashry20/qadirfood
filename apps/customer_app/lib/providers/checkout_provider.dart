@@ -9,6 +9,7 @@ import '../data/api_repository.dart';
 import '../models/address.dart';
 import '../models/order.dart';
 import 'cart_provider.dart';
+import 'loyalty_provider.dart';
 import 'orders_provider.dart';
 
 // ─────────────────────────── الكوبون ───────────────────────────
@@ -71,7 +72,13 @@ final appliedCouponProvider =
     NotifierProvider<AppliedCouponNotifier, Coupon?>(AppliedCouponNotifier.new);
 
 // ─────────────────────── وقت التوصيل والتسليم ───────────────────────
-// الاتنين محليين — الـ API مافيهوش جدولة، فاللي مش افتراضي بيروح في customerNotes.
+
+/// أقل مهلة للجدولة — مطابقة لـ `MIN_LEAD_MINUTES` في `api/src/orders/scheduling.ts`.
+/// بنفرضها في التطبيق كمان عشان العميل يشوف الحد قبل ما يبعت، مش يتفاجأ بخطأ.
+const kMinScheduleLeadMinutes = 30;
+
+/// أقصى مدى للجدولة — مطابق لـ `MAX_HORIZON_DAYS` في السيرفر.
+const kMaxScheduleHorizonDays = 7;
 
 /// «أسرع وقت» أو «جدولة».
 enum DeliverySlot { asap, scheduled }
@@ -86,6 +93,53 @@ class DeliverySlotNotifier extends Notifier<DeliverySlot> {
 final deliverySlotProvider =
     NotifierProvider<DeliverySlotNotifier, DeliverySlot>(DeliverySlotNotifier.new);
 
+/// وقت التسليم المطلوب للطلب المجدول.
+///
+/// كان الخيار «جدولة» بيكتب سطر في الملاحظات بس — الـ API ماكانش فيه جدولة
+/// أصلاً. بقى فيه عمود `scheduledFor` حقيقي: الطلب بيتخزّن مخفي عن المطعم
+/// لحد وقت الإطلاق. فالقيمة دي بتروح للسيرفر مش للملاحظات.
+class ScheduledForNotifier extends Notifier<DateTime?> {
+  @override
+  DateTime? build() => null;
+
+  void select(DateTime? at) => state = at;
+
+  /// أقرب وقت مسموح — دلوقتي + المهلة الدنيا، مقرّب لأعلى لأقرب ربع ساعة.
+  static DateTime earliest() {
+    final at = DateTime.now().add(const Duration(minutes: kMinScheduleLeadMinutes));
+    final remainder = at.minute % 15;
+    return DateTime(
+      at.year,
+      at.month,
+      at.day,
+      at.hour,
+      at.minute + (remainder == 0 ? 0 : 15 - remainder),
+    );
+  }
+
+  static DateTime latest() =>
+      DateTime.now().add(const Duration(days: kMaxScheduleHorizonDays));
+}
+
+final scheduledForProvider =
+    NotifierProvider<ScheduledForNotifier, DateTime?>(ScheduledForNotifier.new);
+
+// ─────────────────────────── الإكرامية ───────────────────────────
+
+/// الإكراميات الجاهزة المعروضة كأزرار. الصفر = «بدون».
+const kTipPresets = <double>[0, 5, 10, 15];
+
+/// إكرامية المندوب — بتروح ١٠٠٪ له، مافيش عليها ضريبة ولا عمولة.
+/// السيرفر بيرفضها على الدفع نقداً (الكاش بيتسلّم في اليد).
+class TipNotifier extends Notifier<double> {
+  @override
+  double build() => 0;
+
+  void select(double amount) => state = amount < 0 ? 0 : amount;
+}
+
+final tipProvider = NotifierProvider<TipNotifier, double>(TipNotifier.new);
+
 /// «توصيل للباب» أو «استلام من الشارع».
 enum DropOff { door, curb }
 
@@ -99,12 +153,11 @@ class DropOffNotifier extends Notifier<DropOff> {
 final dropOffProvider = NotifierProvider<DropOffNotifier, DropOff>(DropOffNotifier.new);
 
 /// الملاحظات اللي بتوصل للمطعم — بنكتب بس اللي مش افتراضي.
-String? checkoutNotes({required DeliverySlot slot, required DropOff drop}) {
-  final parts = [
-    if (drop == DropOff.curb) 'استلام من الشارع',
-    if (slot == DeliverySlot.scheduled) 'توصيل مجدول',
-  ];
-  return parts.isEmpty ? null : parts.join(' · ');
+///
+/// «توصيل مجدول» اتشال من هنا: بقى عمود `scheduledFor` حقيقي في الطلب، فكتابته
+/// في الملاحظات كانت هتكرّر المعلومة وتسيبها نص حر مالوش معنى للسيرفر.
+String? checkoutNotes({required DropOff drop}) {
+  return drop == DropOff.curb ? 'استلام من الشارع' : null;
 }
 
 // ─────────────────────────── الدفع ───────────────────────────
@@ -166,18 +219,29 @@ class CheckoutNotifier extends Notifier<AsyncValue<void>> {
     final branchId = cart.restaurantId;
 
     if (branchId == null || cart.isEmpty) {
-      throw ApiException('السلة فاضية');
+      throw const ApiException('السلة فارغة');
     }
     if (!ref.read(minOrderMetProvider)) {
-      throw ApiException('الحد الأدنى للطلب من الفرع ده ${money(cart.minOrderTotal)} ر.س');
+      throw ApiException('الحد الأدنى للطلب من هذا الفرع ${money(cart.minOrderTotal)} ر.س');
     }
 
     final payment = ref.read(selectedPaymentProvider);
     final coupon = ref.read(appliedCouponProvider);
-    final notes = checkoutNotes(
-      slot: ref.read(deliverySlotProvider),
-      drop: ref.read(dropOffProvider),
-    );
+    final notes = checkoutNotes(drop: ref.read(dropOffProvider));
+
+    // الجدولة بتتبعت بس لو العميل اختار «جدولة» **وحدّد وقت** — اختيار الخيار
+    // من غير وقت بيبقى طلب فوري، مش طلب بوقت مخترع.
+    final scheduledFor = ref.read(deliverySlotProvider) == DeliverySlot.scheduled
+        ? ref.read(scheduledForProvider)
+        : null;
+
+    // الإكرامية للدفع الإلكتروني بس — السيرفر بيرفضها على الكاش، فبنسقّطها هنا
+    // بدل ما الطلب كله يفشل على حاجة اختيارية.
+    final tip = payment.type == PaymentType.cash ? 0.0 : ref.read(tipProvider);
+
+    // النقاط المطلوب استبدالها — السيرفر بيقيّدها تاني بالرصيد وبسقف الطلب،
+    // فلو العميل غيّر السلة بعد التسعير الطلب مايفشلش، الخصم بس بيتعدّل.
+    final redeemPoints = ref.read(redeemPointsProvider);
 
     state = const AsyncLoading();
     try {
@@ -189,11 +253,19 @@ class CheckoutNotifier extends Notifier<AsyncValue<void>> {
             customerNotes: notes,
             items: [for (final line in cart.lines) OrderItemInput.fromCartLine(line)],
             restaurantName: cart.restaurantName,
+            tipAmount: tip,
+            scheduledFor: scheduledFor,
+            redeemPoints: redeemPoints,
           );
 
       ref.read(cartProvider.notifier).clear();
       ref.read(appliedCouponProvider.notifier).clear();
+      ref.read(redeemPointsProvider.notifier).clear();
+      ref.read(tipProvider.notifier).select(0);
+      ref.read(scheduledForProvider.notifier).select(null);
       ref.invalidate(ordersProvider);
+      // الرصيد اتغيّر (كسب و/أو استبدال) — الشاشة الجاية لازم تقرا الجديد.
+      ref.invalidate(loyaltyProvider);
 
       state = const AsyncData(null);
       return order;

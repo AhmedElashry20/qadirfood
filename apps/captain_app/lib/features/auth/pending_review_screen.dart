@@ -39,7 +39,7 @@ class _PendingReviewScreenState extends ConsumerState<PendingReviewScreen> {
         context.go(QRoutes.home);
         return;
       }
-      _snack(context, 'لسه تحت المراجعة — هنبعتلك إشعار أول ما يتفعّل');
+      _snack(context, 'لا يزال تحت المراجعة — سنرسل لك إشعاراً بمجرد التفعيل');
     } on ApiException catch (e) {
       if (!context.mounted) return;
       _snack(context, e.message);
@@ -57,7 +57,7 @@ class _PendingReviewScreenState extends ConsumerState<PendingReviewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: QColors.ink,
+      backgroundColor: QColors.inkSurface,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -79,7 +79,7 @@ class _PendingReviewScreenState extends ConsumerState<PendingReviewScreen> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                const Text(
+                Text(
                   'عادة بتاخد 24 ساعة — هنبعتلك إشعار أول ما يتفعّل',
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -99,7 +99,7 @@ class _PendingReviewScreenState extends ConsumerState<PendingReviewScreen> {
                 const SizedBox(height: 10),
                 TextButton(
                   onPressed: _logout,
-                  child: const Text(
+                  child: Text(
                     'تسجيل الخروج',
                     style: TextStyle(
                       fontFamily: 'Cairo',
@@ -142,7 +142,7 @@ class _OutlineOnDarkButton extends StatelessWidget {
             border: Border.all(color: QColors.inkLine, width: 1.5),
           ),
           child: loading
-              ? const SizedBox(
+              ? SizedBox(
                   width: 20,
                   height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2.4, color: QColors.brand),
@@ -171,7 +171,7 @@ void _snack(BuildContext context, String message) {
         behavior: SnackBarBehavior.floating,
         content: Text(
           message,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Cairo',
             fontSize: 13.5,
             fontWeight: FontWeight.w700,

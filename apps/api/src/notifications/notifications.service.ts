@@ -31,7 +31,7 @@ export class NotificationsService implements OnModuleInit {
     let privateKey = this.config.get<string>('FIREBASE_PRIVATE_KEY');
 
     if (!projectId || !clientEmail || !privateKey) {
-      this.logger.warn('FCM مش متظبّط (FIREBASE_*) — الإشعارات هتتسجّل في اللوج بس');
+      this.logger.warn('FCM غير مضبوط (FIREBASE_*) — ستُسجَّل الإشعارات في السجل فقط');
       return;
     }
 

@@ -96,6 +96,30 @@ export const INTEGRATIONS: IntegrationDef[] = [
     docsUrl: 'https://tga.gov.sa',
   },
   {
+    id: 'loyalty',
+    name: 'نقاط الولاء والإحالة',
+    desc: 'نقاط على كل ريال، تُستبدل كخصم. ومكافأة إحالة للداعي والمدعو بعد أول طلب تم تسليمه.',
+    fields: [
+      { key: 'LOYALTY_ENABLED', label: 'تفعيل البرنامج (1/0)', placeholder: '0' },
+      { key: 'LOYALTY_POINTS_PER_SAR', label: 'نقاط لكل ريال', placeholder: '1' },
+      { key: 'LOYALTY_POINT_VALUE_SAR', label: 'قيمة النقطة بالريال', placeholder: '0.05' },
+      { key: 'LOYALTY_REFERRAL_POINTS', label: 'نقاط مكافأة الإحالة', placeholder: '500' },
+    ],
+    required: ['LOYALTY_ENABLED'],
+  },
+  {
+    id: 'routing',
+    name: 'المسافات والمسارات — OSRM',
+    desc: 'مسافة طريق فعلية بدل التقدير الهوائي. تحدّد مستحق الكابتن والوقت المتوقع. الخادم العام ليس للإنتاج — استضف نسختك.',
+    fields: [
+      { key: 'ROUTING_PROVIDER', label: 'المزوّد', placeholder: 'osrm (فارغ = تقدير هوائي)' },
+      { key: 'ROUTING_OSRM_URL', label: 'عنوان سيرفر OSRM', placeholder: 'https://osrm.example.com' },
+      { key: 'ROUTING_TIMEOUT_MS', label: 'مهلة النداء (ملّي ثانية)', placeholder: '2500' },
+    ],
+    required: ['ROUTING_PROVIDER', 'ROUTING_OSRM_URL'],
+    docsUrl: 'https://project-osrm.org',
+  },
+  {
     id: 'storage',
     name: 'التخزين السحابي — S3',
     desc: 'رفع صور المنتجات والوثائق والسيلفي على سحابة بدل القرص المحلي.',

@@ -9,6 +9,7 @@ import 'core/locale.dart';
 import 'core/router.dart';
 import 'core/socket_service.dart';
 import 'core/theme.dart';
+import 'providers/theme_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,11 +49,19 @@ class _QadirFoodAppState extends ConsumerState<QadirFoodApp> {
   @override
   Widget build(BuildContext context) {
     final language = ref.watch(languageProvider);
+    final mode = ref.watch(themeModeProvider);
+
+    // `QColors.active` لازم تتظبّط **قبل** `buildQadirTheme()`: الثيم بيقرا من
+    // الـ getters، فلو الترتيب اتقلب الثيم بيتبنى بألوان الوضع القديم.
+    final platformBrightness = MediaQuery.platformBrightnessOf(context);
+    applyPalette(mode, platformBrightness);
 
     return MaterialApp.router(
       title: 'قادر فود',
       debugShowCheckedModeBanner: false,
       theme: buildQadirTheme(),
+      darkTheme: buildQadirTheme(brightness: Brightness.dark),
+      themeMode: mode,
       routerConfig: _router,
       locale: language.locale,
       supportedLocales: [for (final l in AppLanguage.values) l.locale],
@@ -62,10 +71,16 @@ class _QadirFoodAppState extends ConsumerState<QadirFoodApp> {
         GlobalCupertinoLocalizations.delegate,
       ],
       // اتجاه الواجهة بيتبع اللغة المختارة (عربي/أوردو/فارسي = RTL).
-      builder: (context, child) => Directionality(
-        textDirection: language.direction,
-        child: child ?? const SizedBox.shrink(),
-      ),
+      builder: (context, child) {
+        // تاني مرة عن قصد: `MaterialApp` بيعيد بناء الشجرة لما وضع الجهاز
+        // يتغيّر والتطبيق شغّال، والبناء ده بيحصل بعد ما الثيم اتحدّد فوق —
+        // فلازم الـ palette تكون مظبوطة هنا كمان عشان الشاشات تقرا الصح.
+        applyPalette(mode, MediaQuery.platformBrightnessOf(context));
+        return Directionality(
+          textDirection: language.direction,
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
     );
   }
 }

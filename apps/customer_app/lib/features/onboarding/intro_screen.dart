@@ -81,7 +81,7 @@ class _IntroScreenState extends State<IntroScreen> {
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  child: const Text(
+                  child: Text(
                     'تخطي',
                     style: TextStyle(
                       fontFamily: 'Cairo',
@@ -155,7 +155,7 @@ class _IntroPageView extends StatelessWidget {
             width: 160,
             height: 160,
             alignment: Alignment.center,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: QColors.tint,
               shape: BoxShape.circle,
             ),

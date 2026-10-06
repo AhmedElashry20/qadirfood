@@ -86,10 +86,10 @@ class _PickLocationScreenState extends ConsumerState<PickLocationScreen> {
                   borderRadius: BorderRadius.circular(13),
                   boxShadow: kCardShadow,
                 ),
-                child: const Row(
+                child: Row(
                   children: [
                     Icon(Icons.search, size: 20, color: QColors.hint),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     Text(
                       'ابحث عن حي أو شارع…',
                       style: TextStyle(
@@ -118,9 +118,9 @@ class _PickLocationScreenState extends ConsumerState<PickLocationScreen> {
         QSpace.screenH,
         20 + MediaQuery.of(context).padding.bottom,
       ),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: QColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(QRadius.sheet)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(QRadius.sheet)),
         boxShadow: kFloatShadow,
       ),
       child: Column(
@@ -155,7 +155,7 @@ class _PickLocationScreenState extends ConsumerState<PickLocationScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'الموقع المحدد على الخريطة',
                       style: TextStyle(
                         fontFamily: 'Cairo',

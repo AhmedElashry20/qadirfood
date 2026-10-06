@@ -14,7 +14,7 @@ import '../../widgets/common.dart';
 
 const _cardPadding = EdgeInsets.symmetric(horizontal: 16, vertical: 14);
 
-const _name = TextStyle(
+final _name = TextStyle(
   fontFamily: 'Cairo',
   fontSize: 15,
   fontWeight: FontWeight.w800,
@@ -43,7 +43,7 @@ class _MyOrdersScreenState extends ConsumerState<MyOrdersScreen> {
         children: [
           // ── هيدر بدون زر رجوع (الشاشة جوّه الشل السفلي) ──
           Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: QColors.surface,
               border: Border(bottom: BorderSide(color: QColors.line)),
             ),
@@ -54,7 +54,7 @@ class _MyOrdersScreenState extends ConsumerState<MyOrdersScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('طلباتي', style: QText.screenTitle),
+                    Text('طلباتي', style: QText.screenTitle),
                     const SizedBox(height: 12),
                     Row(
                       children: [
@@ -76,7 +76,7 @@ class _MyOrdersScreenState extends ConsumerState<MyOrdersScreen> {
 
           Expanded(
             child: all.when(
-              loading: () => const Center(
+              loading: () => Center(
                 child: CircularProgressIndicator(color: QColors.brand),
               ),
               error: (e, _) => _ErrorView(
@@ -91,7 +91,7 @@ class _MyOrdersScreenState extends ConsumerState<MyOrdersScreen> {
                     ? ListView(
                         physics: const AlwaysScrollableScrollPhysics(),
                         padding: const EdgeInsets.all(QSpace.screenH),
-                        children: const [QEmpty(message: 'مافي طلبات هنا', emoji: '🧾')],
+                        children: const [QEmpty(message: 'لا توجد طلبات هنا', emoji: '🧾')],
                       )
                     : ListView.separated(
                         physics: const AlwaysScrollableScrollPhysics(),
@@ -127,15 +127,15 @@ class _ActiveOrderCard extends ConsumerWidget {
       builder: (ctx) => AlertDialog(
         backgroundColor: QColors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(QRadius.lg)),
-        title: const Text('إلغاء الطلب؟', style: QText.section),
-        content: const Text(
-          'الإلغاء متاح طول ما المطعم لسه ما أكّدش الطلب.',
+        title: Text('إلغاء الطلب؟', style: QText.section),
+        content: Text(
+          'الإلغاء متاح ما دام المطعم لم يؤكّد الطلب.',
           style: QText.bodyMuted,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('تراجع', style: QText.body),
+            child: Text('تراجع', style: QText.body),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
@@ -185,10 +185,10 @@ class _ActiveOrderCard extends ConsumerWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '🛵 ${order.status.ar}$eta',
+                      '🛵 ${order.statusLabel}$eta',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Cairo',
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
@@ -256,10 +256,10 @@ class _DoneOrderCard extends ConsumerWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '✓ ${order.status.ar} — ${order.placedAtLabel}',
+                  '✓ ${order.statusLabel} — ${order.placedAtLabel}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Cairo',
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
@@ -271,7 +271,7 @@ class _DoneOrderCard extends ConsumerWidget {
                   order.itemsSummary,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Cairo',
                     fontSize: 11.5,
                     fontWeight: FontWeight.w600,
@@ -289,7 +289,7 @@ class _DoneOrderCard extends ConsumerWidget {
               const SizedBox(height: 4),
               InkWell(
                 onTap: () => _reorder(context, ref, order),
-                child: const Text(
+                child: Text(
                   'اطلب مجدداً',
                   style: TextStyle(
                     fontFamily: 'Cairo',
@@ -334,10 +334,10 @@ class _CancelledOrderCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '✕ ${order.status.ar} — ${order.placedAtLabel}',
+                  '✕ ${order.statusLabel} — ${order.placedAtLabel}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Cairo',
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
@@ -365,7 +365,7 @@ Future<void> _reorder(BuildContext context, WidgetRef ref, Order order) async {
     context.push(QRoutes.restaurant(draft.branchId.isEmpty ? order.branchId : draft.branchId));
     _snack(
       context,
-      draft.hasUnavailable ? 'بعض الأصناف مش متوفرة دلوقتي' : 'ضفنا أصناف الطلب — راجعها قبل الدفع',
+      draft.hasUnavailable ? 'بعض الأصناف غير متوفرة حالياً' : 'ضفنا أصناف الطلب — راجعها قبل الدفع',
     );
   } on ApiException catch (e) {
     if (!context.mounted) return;
@@ -405,7 +405,7 @@ void _snack(BuildContext context, String message) {
       SnackBar(
         content: Text(message, style: QText.body.copyWith(color: QColors.brand)),
         behavior: SnackBarBehavior.floating,
-        backgroundColor: QColors.ink,
+        backgroundColor: QColors.inkSurface,
         duration: const Duration(seconds: 3),
       ),
     );

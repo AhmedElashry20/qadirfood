@@ -56,7 +56,7 @@ class _RestaurantScreenState extends ConsumerState<RestaurantScreen> {
         SnackBar(
           content: Text(
             message,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Cairo',
               fontSize: 13.5,
               fontWeight: FontWeight.w800,
@@ -64,7 +64,7 @@ class _RestaurantScreenState extends ConsumerState<RestaurantScreen> {
             ),
           ),
           behavior: SnackBarBehavior.floating,
-          backgroundColor: QColors.ink,
+          backgroundColor: QColors.inkSurface,
           duration: const Duration(seconds: 2),
         ),
       );
@@ -73,14 +73,14 @@ class _RestaurantScreenState extends ConsumerState<RestaurantScreen> {
   @override
   Widget build(BuildContext context) {
     return ref.watch(restaurantProvider(widget.restaurantId)).when(
-          loading: () => const Scaffold(
+          loading: () => Scaffold(
             backgroundColor: QColors.surface,
             body: Center(child: CircularProgressIndicator(color: QColors.brand)),
           ),
           error: (error, _) => Scaffold(
             backgroundColor: QColors.surface,
             body: _ErrorView(
-              message: error is ApiException ? error.message : 'حصل خطأ',
+              message: error is ApiException ? error.message : 'حدث خطأ',
               onRetry: () => ref.invalidate(restaurantProvider(widget.restaurantId)),
             ),
           ),
@@ -111,9 +111,9 @@ class _RestaurantScreenState extends ConsumerState<RestaurantScreen> {
           ),
           Container(
             transform: Matrix4.translationValues(0, -24, 0),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: QColors.surface,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(QRadius.sheet)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(QRadius.sheet)),
             ),
             padding: const EdgeInsets.fromLTRB(QSpace.screenH, 18, QSpace.screenH, 18),
             child: Column(
@@ -128,7 +128,7 @@ class _RestaurantScreenState extends ConsumerState<RestaurantScreen> {
                         children: [
                           Text(
                             r.name,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontFamily: 'Cairo',
                               fontSize: 21,
                               fontWeight: FontWeight.w900,
@@ -170,7 +170,7 @@ class _RestaurantScreenState extends ConsumerState<RestaurantScreen> {
                     const SizedBox(width: 10),
                     _StatBox(
                       value: r.isFreeDelivery
-                          ? const Text(
+                          ? Text(
                               'مجاني',
                               style: TextStyle(
                                 fontFamily: 'Cairo',
@@ -205,7 +205,7 @@ class _RestaurantScreenState extends ConsumerState<RestaurantScreen> {
                     ),
                     child: Text(
                       'المطعم مغلق حالياً — ${r.opensAtLabel ?? ''}'.trim(),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Cairo',
                         fontSize: 13.5,
                         fontWeight: FontWeight.w800,
@@ -216,7 +216,7 @@ class _RestaurantScreenState extends ConsumerState<RestaurantScreen> {
                 ],
                 const SizedBox(height: 18),
                 Container(
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     border: Border(bottom: BorderSide(color: QColors.line, width: 1.5)),
                   ),
                   child: SingleChildScrollView(
@@ -353,11 +353,13 @@ class _Cover extends StatelessWidget {
 }
 
 class _CoverButton extends StatelessWidget {
-  const _CoverButton({required this.icon, required this.onTap, this.color = QColors.ink});
+  const _CoverButton({required this.icon, required this.onTap, this.color});
 
   final IconData icon;
   final VoidCallback onTap;
-  final Color color;
+
+  /// nullable — القيمة الافتراضية لازم تكون ثابتة، وألوان الثيم بقت getters.
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {

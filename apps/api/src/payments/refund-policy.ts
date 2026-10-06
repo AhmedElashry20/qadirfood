@@ -32,6 +32,9 @@ export function commissionToReverse(
   const total = new Decimal(order.total);
   if (total.lte(0)) return new Decimal(0);
 
-  const share = new Decimal(refundAmount).dividedBy(total);
+  // سقف ١ على النسبة: المدفوع بقى `total + tipAmount` (الإكرامية مش جوه
+  // `total`)، فاسترداد كامل بإكرامية بيطلع نسبة أكبر من واحد وكان هيرجّع عمولة
+  // أكبر من العمولة نفسها. الإكرامية مالهاش عمولة أصلاً، فالنسبة تتقيّد بـ ١.
+  const share = Decimal.min(1, new Decimal(refundAmount).dividedBy(total));
   return new Decimal(order.commission).times(share).toDecimalPlaces(2);
 }

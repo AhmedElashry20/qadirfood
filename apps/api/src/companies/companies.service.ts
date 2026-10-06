@@ -40,13 +40,13 @@ export class CompaniesService {
   private scopeCompanyId(user: AuthUser, requested?: string): string | undefined {
     if (user.role === UserRole.ADMIN) return requested;
     if (user.role === UserRole.COMPANY) {
-      if (!user.companyId) throw new ForbiddenException('الجلسة مش مربوطة بشركة');
+      if (!user.companyId) throw new ForbiddenException('الجلسة غير مرتبطة بشركة');
       if (requested && requested !== user.companyId) {
-        throw new ForbiddenException('مش مسموح لك بشركة تانية');
+        throw new ForbiddenException('غير مسموح لك بشركة أخرى');
       }
       return user.companyId;
     }
-    throw new ForbiddenException('غير مصرح');
+    throw new ForbiddenException('غير مصرَّح لك');
   }
 
   // ────────────────────────────────────────────────────────────
@@ -117,7 +117,7 @@ export class CompaniesService {
   /** الشركة الحالية لمستخدم الشركة — «GET /companies/me». */
   async me(user: AuthUser) {
     if (user.role !== UserRole.COMPANY || !user.companyId) {
-      throw new ForbiddenException('ده مسار مستخدمي الشركات');
+      throw new ForbiddenException('هذا مسار مستخدمي الشركات');
     }
     return this.detail(user, user.companyId);
   }

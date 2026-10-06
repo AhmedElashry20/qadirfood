@@ -141,7 +141,7 @@ double discountOf(Coupon coupon, double subtotal) {
 }
 
 /// الحد الأدنى للطلب من الفرع اتحقق؟ — نفس الشرط اللي السيرفر بيرفض بيه الطلب
-/// («الحد الأدنى للطلب من الفرع ده N ر.س»). الرقم نفسه في `cart.minOrderTotal`.
+/// («الحد الأدنى للطلب من هذا الفرع N ر.س»). الرقم نفسه في `cart.minOrderTotal`.
 final minOrderMetProvider = Provider<bool>((ref) {
   final cart = ref.watch(cartProvider);
   return cart.subtotal >= cart.minOrderTotal;

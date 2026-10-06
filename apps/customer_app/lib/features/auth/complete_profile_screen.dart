@@ -135,7 +135,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
             children: [
               const QBackButton(),
               const SizedBox(height: QSpace.gapLg),
-              const Text('كمّل بياناتك', style: QText.display),
+              Text('كمّل بياناتك', style: QText.display),
               const SizedBox(height: QSpace.gapLg),
               const Center(child: _AvatarPicker()),
               const SizedBox(height: QSpace.gapLg),
@@ -165,7 +165,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
                       children: [
                         QCheckBox(checked: _agreed),
                         const SizedBox(width: 10),
-                        const Expanded(
+                        Expanded(
                           child: Text(
                             'أوافق على الشروط وسياسة الخصوصية',
                             style: TextStyle(
@@ -188,7 +188,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
                   label: _saving ? 'جاري الحفظ…' : 'حفظ ومتابعة',
                   enabled: canSave,
                   leading: _saving
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 16,
                           height: 16,
                           child: CircularProgressIndicator(strokeWidth: 2, color: QColors.ink),
@@ -211,11 +211,11 @@ void _snack(BuildContext context, String message) {
     ..hideCurrentSnackBar()
     ..showSnackBar(
       SnackBar(
-        backgroundColor: QColors.ink,
+        backgroundColor: QColors.inkSurface,
         behavior: SnackBarBehavior.floating,
         content: Text(
           message,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Cairo',
             fontSize: 13.5,
             fontWeight: FontWeight.w700,

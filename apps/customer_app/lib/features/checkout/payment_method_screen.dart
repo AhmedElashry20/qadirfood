@@ -47,7 +47,7 @@ class PaymentMethodScreen extends ConsumerWidget {
                         children: [
                           Text(
                             m.title,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontFamily: 'Cairo',
                               fontSize: 14.5,
                               fontWeight: FontWeight.w800,
@@ -59,7 +59,7 @@ class PaymentMethodScreen extends ConsumerWidget {
                             const SizedBox(height: 3),
                             Text(
                               m.subtitle!,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'Cairo',
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w700,
@@ -85,8 +85,8 @@ class PaymentMethodScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(QRadius.sm),
                       border: Border.all(color: QColors.tintBorder, width: 1.5),
                     ),
-                    child: const Text(
-                      'الدفع الإلكتروني لسه مش مفعّل — هيتسجّل الطلب كغير مدفوع',
+                    child: Text(
+                      'الدفع الإلكتروني غير مفعَّل بعد — سيُسجَّل الطلب كغير مدفوع',
                       style: TextStyle(
                         fontFamily: 'Cairo',
                         fontSize: 11.5,
@@ -116,7 +116,7 @@ class PaymentMethodScreen extends ConsumerWidget {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
             'حفظ البطاقات محتاج ربط بوابة الدفع',
             style: TextStyle(
@@ -127,8 +127,8 @@ class PaymentMethodScreen extends ConsumerWidget {
             ),
           ),
           behavior: SnackBarBehavior.floating,
-          backgroundColor: QColors.ink,
-          duration: Duration(seconds: 3),
+          backgroundColor: QColors.inkSurface,
+          duration: const Duration(seconds: 3),
         ),
       );
   }
@@ -144,9 +144,9 @@ class QPaymentBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     switch (type) {
       case PaymentType.mada:
-        return const _BadgeBox(bg: QColors.ink, label: 'mada', fg: Colors.white);
+        return _BadgeBox(bg: QColors.ink, label: 'mada', fg: Colors.white);
       case PaymentType.applePay:
-        return const _BadgeBox(bg: QColors.ink, label: ' Pay', fg: Colors.white);
+        return _BadgeBox(bg: QColors.ink, label: ' Pay', fg: Colors.white);
       case PaymentType.card:
         return const _BadgeBox(bg: Color(0xFF2557A7), label: 'VISA', fg: Colors.white);
       case PaymentType.cash:

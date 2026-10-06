@@ -18,11 +18,24 @@ export class ApiError extends Error {
   }
 }
 
-const FALLBACK_MESSAGE = 'حصل خطأ غير متوقع';
-const OFFLINE_MESSAGE = 'مافيش اتصال بالسيرفر';
+const FALLBACK_MESSAGE = 'حدث خطأ غير متوقع';
+const OFFLINE_MESSAGE = 'تعذّر الاتصال بالخادم — تأكّد أن الـ API يعمل على المنفذ 3000';
+const TIMEOUT_MESSAGE = 'انتهت مهلة الطلب — الخادم لا يستجيب';
+
+/**
+ * عنوان الـ API.
+ *
+ * في التطوير يبقى '/api' فيمرّ على بروكسي Vite إلى المنفذ 3000. أما بعد البناء
+ * للاستضافة الثابتة فلا يوجد بروكسي — لذا يُمرَّر العنوان الكامل وقت البناء:
+ *     VITE_API_URL=https://xxx.onrender.com npm run build
+ * بدونه كانت اللوحة تطلب '/api' من دومين الاستضافة نفسه فتحصل على 404.
+ */
+const API_BASE = import.meta.env.VITE_API_URL
+  ? `${String(import.meta.env.VITE_API_URL).replace(/\/$/, '')}/api`
+  : '/api';
 
 export const api: AxiosInstance = axios.create({
-  baseURL: '/api',
+  baseURL: API_BASE,
   headers: { 'Content-Type': 'application/json' },
   /**
    * الفلاتر المصفوفة بتتبعت بأقواس: `status[]=PENDING&status[]=READY`.
@@ -118,19 +131,35 @@ export async function unwrap<T>(promise: Promise<AxiosResponse<T>>): Promise<T> 
     if (axios.isAxiosError(error)) {
       const status = error.response?.status;
 
-      // مافيش رد أصلاً = السيرفر مقفول أو الشبكة واقعة
+      if (error.code === 'ECONNABORTED') throw new ApiError(TIMEOUT_MESSAGE, undefined);
+
+      // مافيش رد أصلاً = الشبكة واقعة (بناء إنتاج بلا بروكسي)
       if (!error.response) throw new ApiError(OFFLINE_MESSAGE, undefined);
 
       const body = error.response.data as { message?: unknown; error?: unknown } | undefined;
       const raw = body?.message ?? body?.error;
 
       const message = Array.isArray(raw)
-        ? raw.filter((m): m is string => typeof m === 'string').join(' · ') || FALLBACK_MESSAGE
+        ? raw.filter((m): m is string => typeof m === 'string').join(' · ') || null
         : typeof raw === 'string' && raw.trim()
           ? raw
-          : FALLBACK_MESSAGE;
+          : null;
 
-      throw new ApiError(message, status);
+      /**
+       * الخادم مقفول **خلف بروكسي**: بروكسي Vite (وnginx كذلك) بيحوّل رفض
+       * الاتصال لرد 500/502 بـ `text/plain` — يعني `error.response` موجود،
+       * فشرط «لا اتصال» فوق مابيتنفّذش والرسالة كانت بتقع على «حدث خطأ غير
+       * متوقع» وتخفي السبب الحقيقي.
+       *
+       * العلامة: حالة 5xx بلا رسالة JSON صالحة. الـ API بتاعنا بيرجّع دايماً
+       * `{ message }` عربية حتى في أخطاء ٥٠٠ (عبر `HttpExceptionFilter`)،
+       * فغيابها معناه إن الرد مش من الـ API أصلاً.
+       */
+      if (!message && status !== undefined && status >= 500) {
+        throw new ApiError(OFFLINE_MESSAGE, status);
+      }
+
+      throw new ApiError(message ?? FALLBACK_MESSAGE, status);
     }
 
     throw new ApiError(FALLBACK_MESSAGE);

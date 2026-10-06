@@ -143,7 +143,7 @@ export default function Companies() {
                 ) : rows.length === 0 ? (
                   <EmptyState
                     icon="🚚"
-                    title="مافيش شركات أسطول لسه"
+                    title="لا توجد شركات أسطول بعد"
                     description="أضف أول شركة من زر «شركة جديدة» فوق، وبعدها عيّن ليها كباتن من صفحة الكباتن."
                   />
                 ) : (
@@ -602,7 +602,7 @@ function CompanyDrawer({ companyId, onClose, showToast }: CompanyDrawerProps) {
               </ul>
             ) : (
               <p className="text-[11.5px] font-bold text-faint">
-                مافيش كباتن مربوطين بالشركة — اربط كباتن من صفحة «الكباتن».
+                لا يوجد كباتن مربوطين بالشركة — اربط كباتن من صفحة «الكباتن».
               </p>
             )}
           </div>

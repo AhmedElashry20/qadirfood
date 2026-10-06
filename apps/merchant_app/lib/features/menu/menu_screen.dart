@@ -43,7 +43,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          backgroundColor: QColors.ink,
+          backgroundColor: QColors.inkSurface,
           content: Text(message, style: QText.body.copyWith(color: QColors.brand)),
         ),
       );
@@ -77,7 +77,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                 AsyncLoading() => const QLoading(),
                 AsyncError(:final error) => _scrollable(
                     QErrorView(
-                      message: error is ApiException ? error.message : 'حصل خطأ غير متوقع',
+                      message: error is ApiException ? error.message : 'حدث خطأ غير متوقع',
                       onRetry: () => ref.invalidate(menuProvider),
                     ),
                   ),
@@ -99,7 +99,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
             color: QColors.brand,
             borderRadius: BorderRadius.circular(QRadius.pill),
           ),
-          child: const Text(
+          child: Text(
             '+ صنف جديد',
             style: TextStyle(
               fontFamily: 'Cairo',
@@ -174,7 +174,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
       final searching = ref.watch(menuSearchProvider).trim().isNotEmpty;
       return _scrollable(
         QEmpty(
-          message: searching ? 'مافيش نتيجة للبحث ده' : 'مافيش أصناف في التصنيف ده',
+          message: searching ? 'لا توجد نتيجة لهذا البحث' : 'لا توجد أصناف في هذا التصنيف',
           emoji: '🍔',
         ),
       );
@@ -226,7 +226,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
   }
 
   Widget _itemImage(MerchantMenuItem item) {
-    const fallback = Icon(Icons.restaurant, size: 24, color: QColors.faint);
+    final fallback = Icon(Icons.restaurant, size: 24, color: QColors.faint);
     final url = item.imageUrl;
 
     Widget image = Container(
@@ -259,7 +259,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
     if (!item.isAvailable) {
       return Text(
         item.availability.ar,
-        style: const TextStyle(
+        style: TextStyle(
           fontFamily: 'Cairo',
           fontSize: 12,
           fontWeight: FontWeight.w700,
@@ -279,7 +279,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
           const SizedBox(width: 8),
           QPrice(value: old, size: 12, color: QColors.hint, strikethrough: true),
           const SizedBox(width: 6),
-          const Text(
+          Text(
             '· خصم فعّال',
             style: TextStyle(
               fontFamily: 'Cairo',
@@ -316,7 +316,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
       builder: (dialogContext) => AlertDialog(
         backgroundColor: QColors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(QRadius.xl)),
-        title: const Text('تصنيف جديد', style: QText.section),
+        title: Text('تصنيف جديد', style: QText.section),
         content: QField(hint: 'مشاوي، مشروبات…', label: 'اسم التصنيف', controller: controller),
         actions: [
           TextButton(

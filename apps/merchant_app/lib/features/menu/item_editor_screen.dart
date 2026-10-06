@@ -56,7 +56,7 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          backgroundColor: QColors.ink,
+          backgroundColor: QColors.inkSurface,
           content: Text(message, style: QText.body.copyWith(color: QColors.brand)),
         ),
       );
@@ -102,7 +102,7 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
         AsyncLoading() => const SafeArea(child: QLoading()),
         AsyncError(:final error) => SafeArea(
             child: QErrorView(
-              message: error is ApiException ? error.message : 'حصل خطأ غير متوقع',
+              message: error is ApiException ? error.message : 'حدث خطأ غير متوقع',
               onRetry: () => ref.invalidate(menuProvider),
             ),
           ),
@@ -204,13 +204,13 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
                 color: QColors.chip,
                 borderRadius: BorderRadius.circular(QRadius.sm),
               ),
-              child: const Icon(Icons.close, size: 19, color: QColors.ink),
+              child: Icon(Icons.close, size: 19, color: QColors.ink),
             ),
           ),
           const SizedBox(width: 12),
           Text(
             _isEdit ? 'تعديل صنف' : 'صنف جديد',
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Cairo',
               fontSize: 19,
               fontWeight: FontWeight.w900,
@@ -249,10 +249,10 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: QColors.ink.withValues(alpha: 0.85),
+                  color: QColors.inkSurface.withValues(alpha: 0.85),
                   borderRadius: BorderRadius.circular(QRadius.pill),
                 ),
-                child: const Text(
+                child: Text(
                   '📷 تغيير الصورة',
                   style: TextStyle(
                     fontFamily: 'Cairo',
@@ -272,12 +272,12 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
   Widget _categoryDropdown(List<MenuCategory> categories) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('التصنيف', style: QText.fieldLabel),
+          Text('التصنيف', style: QText.fieldLabel),
           const SizedBox(height: 6),
           DropdownButtonFormField<String>(
             initialValue: categories.any((c) => c.id == _categoryId) ? _categoryId : null,
             isExpanded: true,
-            icon: const Icon(Icons.expand_more, size: 20, color: QColors.label),
+            icon: Icon(Icons.expand_more, size: 20, color: QColors.label),
             style: QText.body,
             decoration: const InputDecoration(hintText: 'اختار التصنيف'),
             items: [
@@ -306,7 +306,7 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               'مجموعات الإضافات',
               style: TextStyle(
                 fontFamily: 'Cairo',
@@ -317,8 +317,8 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
             ),
             InkWell(
               onTap: () => _snack('إدارة مجموعات الإضافات قريباً'),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                 child: Text(
                   '+ مجموعة',
                   style: TextStyle(
@@ -335,7 +335,7 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
         const SizedBox(height: 10),
         if (groups.isEmpty)
           Text(
-            _isEdit ? 'مافيش مجموعات على الصنف ده' : 'تقدر تضيف المجموعات بعد حفظ الصنف',
+            _isEdit ? 'لا توجد مجموعات على هذا الصنف' : 'تقدر تضيف المجموعات بعد حفظ الصنف',
             style: QText.tiny.copyWith(fontWeight: FontWeight.w600, color: QColors.faint),
           )
         else
@@ -382,7 +382,7 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
                     if (group.isRequired)
                       const QBadge(label: 'مطلوب')
                     else
-                      const Text(
+                      Text(
                         '(اختياري)',
                         style: TextStyle(
                           fontFamily: 'Cairo',
@@ -408,8 +408,8 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
           const SizedBox(width: 10),
           InkWell(
             onTap: () => _snack('إدارة مجموعات الإضافات قريباً'),
-            child: const Padding(
-              padding: EdgeInsets.all(4),
+            child: Padding(
+              padding: const EdgeInsets.all(4),
               child: Text('✎', style: TextStyle(fontSize: 15, color: QColors.label)),
             ),
           ),
@@ -419,7 +419,7 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
   }
 
   Widget _bottomBar() => Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: QColors.surface,
           border: Border(top: BorderSide(color: QColors.line)),
         ),
@@ -490,7 +490,7 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
       builder: (dialogContext) => AlertDialog(
         backgroundColor: QColors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(QRadius.xl)),
-        title: const Text('حذف الصنف؟', style: QText.section),
+        title: Text('حذف الصنف؟', style: QText.section),
         content: Text(
           'هيتشال من المنيو نهائياً. لو عايزه يرجع بعدين، أوقفه بدل ما تحذفه.',
           style: QText.bodyMuted,
@@ -533,13 +533,13 @@ class _ImagePlaceholder extends StatelessWidget {
         child: Container(
           color: QColors.canvas,
           alignment: Alignment.center,
-          child: const Column(
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('🖼', style: TextStyle(fontSize: 26)),
-              SizedBox(height: 6),
+              const Text('🖼', style: TextStyle(fontSize: 26)),
+              const SizedBox(height: 6),
               Text(
-                'مافيش صورة',
+                'لا توجد صورة',
                 style: TextStyle(
                   fontFamily: 'Cairo',
                   fontSize: 12,

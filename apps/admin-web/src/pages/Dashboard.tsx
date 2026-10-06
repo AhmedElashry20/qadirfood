@@ -434,7 +434,7 @@ export default function Dashboard() {
                   <span className="font-num text-faint">{DASH}</span>
                 )
               }
-              note={k && k.reviewCount > 0 ? `من ${num(k.reviewCount)} تقييم` : 'مافيش تقييمات في الفترة'}
+              note={k && k.reviewCount > 0 ? `من ${num(k.reviewCount)} تقييم` : 'لا توجد تقييمات في الفترة'}
             />
 
             <HeroKpi
@@ -680,8 +680,8 @@ function MainChart({ query }: { query: UseQueryResult<Timeseries> }) {
     return (
       <EmptyState
         icon="📈"
-        title="مافيش طلبات في الفترة دي"
-        description="الرسم بيتبني من السلسلة الزمنية الحقيقية — مافيش تعبئة بأرقام تقديرية."
+        title="لا توجد طلبات في هذه الفترة"
+        description="يُبنى الرسم من السلسلة الزمنية الفعلية — دون تعبئة بأرقام تقديرية."
       />
     );
   }
@@ -816,7 +816,7 @@ function FunnelBars({ query }: { query: UseQueryResult<Analytics> }) {
   const funnel = query.data?.funnel ?? [];
   const top = funnel[0]?.count ?? 0;
 
-  if (top === 0) return <EmptyState icon="🫗" title="مافيش طلبات في الفترة" />;
+  if (top === 0) return <EmptyState icon="🫗" title="لا توجد طلبات في الفترة" />;
 
   return (
     <ul className="flex flex-col gap-3">
@@ -864,7 +864,7 @@ function PeakHours({ query }: { query: UseQueryResult<Analytics> }) {
   const peak = hours.reduce((m, h) => Math.max(m, h.orders), 0);
   const total = hours.reduce((s, h) => s + h.orders, 0);
 
-  if (total === 0) return <EmptyState icon="🕒" title="مافيش طلبات في الفترة" />;
+  if (total === 0) return <EmptyState icon="🕒" title="لا توجد طلبات في الفترة" />;
 
   const peakHour = hours.find((h) => h.orders === peak)?.hour ?? null;
 
@@ -933,7 +933,7 @@ function PaymentDonut({ query }: { query: UseQueryResult<Analytics> }) {
   const mix = query.data?.paymentMix ?? [];
   const totalCount = mix.reduce((s, m) => s + m.count, 0);
 
-  if (totalCount === 0) return <EmptyState icon="💳" title="مافيش مدفوعات في الفترة" />;
+  if (totalCount === 0) return <EmptyState icon="💳" title="لا توجد مدفوعات في الفترة" />;
 
   const data = mix.map((m) => ({
     method: m.method,
@@ -1011,7 +1011,7 @@ function TopBranches({ query }: { query: UseQueryResult<Analytics> }) {
   if (query.isError) return <ErrorState message={query.error.message} onRetry={() => void query.refetch()} />;
 
   const branches = query.data?.topBranches ?? [];
-  if (branches.length === 0) return <EmptyState icon="🍔" title="مافيش طلبات مسلّمة في الفترة" />;
+  if (branches.length === 0) return <EmptyState icon="🍔" title="لا توجد طلبات مسلَّمة في الفترة" />;
 
   const max = Math.max(...branches.map((b) => b.revenue), 0);
 
@@ -1054,7 +1054,7 @@ function TopItems({ query }: { query: UseQueryResult<Analytics> }) {
   if (query.isError) return <ErrorState message={query.error.message} onRetry={() => void query.refetch()} />;
 
   const items = query.data?.topItems ?? [];
-  if (items.length === 0) return <EmptyState icon="🍽" title="مافيش أصناف مباعة في الفترة" />;
+  if (items.length === 0) return <EmptyState icon="🍽" title="لا توجد أصناف مباعة في الفترة" />;
 
   return (
     <ol className="flex flex-col">

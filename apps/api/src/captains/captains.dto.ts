@@ -143,11 +143,25 @@ export class CreateWithdrawalDto {
 }
 
 export class RejectWithdrawalDto {
-  @ApiProperty({ example: 'الآيبان مش مطابق لاسم الكابتن' })
+  @ApiProperty({ example: 'الآيبان غير مطابق لاسم الكابتن' })
   @IsString()
   @IsNotEmpty({ message: 'سبب الرفض مطلوب' })
   @MaxLength(300)
   reason!: string;
+}
+
+export class SuspendCaptainDto {
+  @ApiProperty({ example: 'تكرار إلغاء الرحلات بعد الاستلام' })
+  @IsString()
+  @IsNotEmpty({ message: 'سبب الإيقاف مطلوب' })
+  @MaxLength(300)
+  reason!: string;
+
+  /** إيقاف كابتن في مهمة جارية — الطلب هيتعلّق لحد ما يتعاد إسناده. */
+  @ApiPropertyOptional({ example: false })
+  @IsOptional()
+  @IsBoolean()
+  force?: boolean;
 }
 
 export class ListWithdrawalsDto extends PaginationDto {

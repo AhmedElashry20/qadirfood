@@ -84,7 +84,7 @@ export function ErrorState({ message, onRetry, className }: ErrorStateProps) {
       </span>
       <p className="text-[13.5px] font-black text-bad-deep">تعذّر تحميل البيانات</p>
       <p className="max-w-[420px] text-[12px] font-bold leading-relaxed text-muted">
-        {message || 'حصل خطأ غير متوقع'}
+        {message || 'حدث خطأ غير متوقع'}
       </p>
       {onRetry ? (
         <Button variant="outline" size="sm" onClick={onRetry} className="mt-1">

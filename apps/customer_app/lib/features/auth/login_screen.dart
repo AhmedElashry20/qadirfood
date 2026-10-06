@@ -60,7 +60,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               // /login بيتفتح بـ go من شاشة اللغة، فمفيش stack يرجع له — لازم وجهة صريحة.
               QBackButton(onTap: () => context.go(QRoutes.language)),
               const SizedBox(height: 24),
-              const Text('أهلاً بك 👋', style: QText.display),
+              Text('أهلاً بك 👋', style: QText.display),
               const SizedBox(height: 6),
               Text(
                 'سجّل برقم جوالك ونوصّلك رمز تحقق',
@@ -93,7 +93,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   label: _sending ? 'جاري الإرسال…' : 'إرسال الرمز',
                   enabled: _valid && !_sending,
                   leading: _sending
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 16,
                           height: 16,
                           child: CircularProgressIndicator(strokeWidth: 2, color: QColors.ink),
@@ -110,7 +110,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 child: QButton(
                   label: 'تسجيل عبر Apple',
                   style: QButtonStyle.outline,
-                  leading: const Icon(Icons.apple, size: 20, color: QColors.ink),
+                  leading: Icon(Icons.apple, size: 20, color: QColors.ink),
                   // مفيش social login في الـ API — الدخول بالجوال بس.
                   onPressed: () => _snack(context, 'قريباً'),
                 ),
@@ -121,7 +121,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 child: QButton(
                   label: 'تسجيل عبر Google',
                   style: QButtonStyle.outline,
-                  leading: const Icon(Icons.g_mobiledata_rounded, size: 24, color: QColors.ink),
+                  leading: Icon(Icons.g_mobiledata_rounded, size: 24, color: QColors.ink),
                   onPressed: () => _snack(context, 'قريباً'),
                 ),
               ),
@@ -139,11 +139,11 @@ void _snack(BuildContext context, String message) {
     ..hideCurrentSnackBar()
     ..showSnackBar(
       SnackBar(
-        backgroundColor: QColors.ink,
+        backgroundColor: QColors.inkSurface,
         behavior: SnackBarBehavior.floating,
         content: Text(
           message,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Cairo',
             fontSize: 13.5,
             fontWeight: FontWeight.w700,
@@ -163,8 +163,8 @@ class _PhoneField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const border = OutlineInputBorder(
-      borderRadius: BorderRadius.all(Radius.circular(QRadius.md)),
+    final border = OutlineInputBorder(
+      borderRadius: const BorderRadius.all(Radius.circular(QRadius.md)),
       borderSide: BorderSide(color: QColors.brand, width: 2),
     );
 
@@ -197,11 +197,11 @@ class _OrDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    return Row(
       children: [
         Expanded(child: Divider(color: QColors.line, thickness: 1)),
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Text(
             'أو',
             style: TextStyle(

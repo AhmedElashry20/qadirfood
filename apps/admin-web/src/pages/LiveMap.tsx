@@ -625,7 +625,7 @@ function SidePanel({
                 );
               })}
               {captains.length === 0 ? (
-                <li className="px-2 py-2 text-[11.5px] font-bold text-faint">مافيش كباتن متصلين دلوقتي</li>
+                <li className="px-2 py-2 text-[11.5px] font-bold text-faint">لا يوجد كباتن متصلين دلوقتي</li>
               ) : null}
             </ul>
 

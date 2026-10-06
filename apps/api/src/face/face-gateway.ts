@@ -50,7 +50,7 @@ export class StubFaceGateway extends FaceGateway {
       return {
         status: 'REJECTED',
         confidence: null,
-        reason: 'مافيش سيلفي',
+        reason: 'لا توجد صورة ذاتية',
         provider: this.name,
         biometricConfigured: false,
       };

@@ -13,7 +13,7 @@ describe('تنسيق الأرقام والمبالغ', () => {
     expect(num(1234.9)).toBe('1,235'); // بيقرّب لصحيح
   });
 
-  it('money: كسرين بس لو فيه كسور فعلاً', () => {
+  it('money: منزلتان عشريتان فقط عند وجود كسور فعلية', () => {
     expect(money(60)).toBe('60'); // صحيح → من غير كسور
     expect(money(59.9)).toBe('59.90'); // كسر → منزلتين
     expect(money(1234.5)).toBe('1,234.50');
@@ -49,7 +49,7 @@ describe('تنسيق الأرقام والمبالغ', () => {
   });
 });
 
-describe('تنسيق التواريخ (ثابت مش locale)', () => {
+describe('تنسيق التواريخ (ثابت لا locale)', () => {
   const d = new Date(2026, 6, 20, 14, 35, 8); // 20 يوليو 2026، 14:35
   it('dateTime / dateOnly / timeOnly', () => {
     expect(dateTime(d)).toBe('2026-07-20 14:35');
@@ -58,7 +58,7 @@ describe('تنسيق التواريخ (ثابت مش locale)', () => {
   });
   it('DASH للتاريخ الفاضي/الغلط', () => {
     expect(dateTime(null)).toBe(DASH);
-    expect(dateOnly('مش تاريخ')).toBe(DASH);
+    expect(dateOnly('ليس تاريخاً')).toBe(DASH);
   });
 });
 

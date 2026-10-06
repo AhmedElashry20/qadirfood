@@ -16,7 +16,10 @@
     "db:up": "docker compose up -d db redis",
     "db:migrate": "npm run prisma:migrate -w @delivery/api",
     "db:seed": "npm run seed -w @delivery/api",
-    "db:studio": "npm run prisma:studio -w @delivery/api"
+    "db:studio": "npm run prisma:studio -w @delivery/api",
+    "dev:landing": "python3 apps/landing/serve.py 5175",
+    "start:local": "bash scripts/start-local.sh",
+    "build:site": "bash scripts/build-site.sh"
   },
   "engines": {
     "node": ">=20"

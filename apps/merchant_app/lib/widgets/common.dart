@@ -29,7 +29,7 @@ class QHeader extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: QColors.surface,
         border: Border(bottom: BorderSide(color: QColors.line)),
       ),
@@ -279,14 +279,14 @@ class QPrice extends StatelessWidget {
     super.key,
     required this.value,
     this.size = 16,
-    this.color = QColors.ink,
+    this.color,
     this.showCurrency = true,
     this.strikethrough = false,
   });
 
   final double value;
   final double size;
-  final Color color;
+  final Color? color;
   final bool showCurrency;
   final bool strikethrough;
 
@@ -326,13 +326,13 @@ class QBadge extends StatelessWidget {
   const QBadge({
     super.key,
     required this.label,
-    this.color = QColors.tintStrong,
-    this.textColor = QColors.goldDeep,
+    this.color,
+    this.textColor,
   });
 
   final String label;
-  final Color color;
-  final Color textColor;
+  final Color? color;
+  final Color? textColor;
 
   @override
   Widget build(BuildContext context) {
@@ -361,7 +361,7 @@ class QCard extends StatelessWidget {
     this.onTap,
     this.highlighted = false,
     this.radius = QRadius.lg,
-    this.color = QColors.surface,
+    this.color,
     this.borderColor,
     this.glow = false,
   });
@@ -373,7 +373,7 @@ class QCard extends StatelessWidget {
   /// إطار أصفر — الطلب الجديد المطلوب الرد عليه.
   final bool highlighted;
   final double radius;
-  final Color color;
+  final Color? color;
   final Color? borderColor;
 
   /// هالة صفرا حوالين الكارت (طلب جديد بس).
@@ -459,7 +459,7 @@ class QListTile extends StatelessWidget {
               ),
             ),
             if (trailing != null) trailing!,
-            if (showChevron) const Icon(Icons.chevron_right, size: 20, color: QColors.hint),
+            if (showChevron) Icon(Icons.chevron_right, size: 20, color: QColors.hint),
           ],
         ),
       ),
@@ -486,7 +486,7 @@ class QTileGroup extends StatelessWidget {
         children: [
           for (var i = 0; i < children.length; i++) ...[
             children[i],
-            if (i != children.length - 1) const Divider(color: QColors.chip, height: 1),
+            if (i != children.length - 1) Divider(color: QColors.chip, height: 1),
           ],
         ],
       ),
@@ -577,7 +577,7 @@ class QCheckBox extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
           border: checked ? null : Border.all(color: const Color(0xFFD8D6CE), width: 2),
         ),
-        child: checked ? const Icon(Icons.check, size: 17, color: QColors.ink) : null,
+        child: checked ? Icon(Icons.check, size: 17, color: QColors.ink) : null,
       ),
     );
   }
@@ -692,7 +692,7 @@ class QLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) =>
-      const Center(child: CircularProgressIndicator(color: QColors.brand));
+      Center(child: CircularProgressIndicator(color: QColors.brand));
 }
 
 /// شريط سفلي ثابت (زر أساسي فوق خلفية الشاشة).

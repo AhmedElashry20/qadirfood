@@ -49,7 +49,7 @@ class _DailyFaceScreenState extends ConsumerState<DailyFaceScreen> {
       );
     } catch (_) {
       if (!mounted) return;
-      _snack(context, 'مش قادرين نفتح الكاميرا');
+      _snack(context, 'تعذّر فتح الكاميرا');
       return;
     }
     if (picked == null || !mounted) return;
@@ -63,7 +63,7 @@ class _DailyFaceScreenState extends ConsumerState<DailyFaceScreen> {
         context,
         switch (check.status) {
           FaceCheckStatus.verified => 'تم استلام تحقّقك اليومي',
-          FaceCheckStatus.pending => 'استلمنا سيلفيك — لسه قيد المراجعة',
+          FaceCheckStatus.pending => 'استلمنا صورتك — لا تزال قيد المراجعة',
           FaceCheckStatus.rejected => check.rejectReason ?? 'التحقق مرفوض — جرّب صورة أوضح',
         },
       );
@@ -85,7 +85,7 @@ class _DailyFaceScreenState extends ConsumerState<DailyFaceScreen> {
       body: todayAsync.when(
         loading: () => const QLoading(),
         error: (error, _) => QErrorView(
-          message: error is ApiException ? error.message : 'مش قادرين نجيب حالة التحقق',
+          message: error is ApiException ? error.message : 'تعذّر تحميل حالة التحقّق',
           onRetry: () => ref.invalidate(faceTodayProvider),
         ),
         data: (today) => ListView(
@@ -119,9 +119,9 @@ class _DailyFaceScreenState extends ConsumerState<DailyFaceScreen> {
                   onPressed: () => context.pop(),
                 )
               : QButton(
-                  label: today.check != null ? 'صوّر تاني' : 'صوّر وشّك',
+                  label: today.check != null ? 'صوّر مرة أخرى' : 'صوّر وشّك',
                   loading: _busy,
-                  leading: const Icon(Icons.camera_alt_rounded, size: 20, color: QColors.ink),
+                  leading: Icon(Icons.camera_alt_rounded, size: 20, color: QColors.ink),
                   onPressed: _capture,
                 ),
         ),
@@ -141,15 +141,15 @@ class _HeroCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
       decoration: BoxDecoration(
-        color: QColors.ink,
+        color: QColors.inkSurface,
         borderRadius: BorderRadius.circular(QRadius.xl),
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('🤳', style: TextStyle(fontSize: 44)),
-          SizedBox(height: 14),
-          Text(
+          const Text('🤳', style: TextStyle(fontSize: 44)),
+          const SizedBox(height: 14),
+          const Text(
             'صوّر سيلفي قبل ما تبدأ',
             style: TextStyle(
               fontFamily: 'Cairo',
@@ -158,10 +158,10 @@ class _HeroCard extends StatelessWidget {
               color: Colors.white,
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
-            'كل يوم بنطلب منك صورة سريعة نتأكد بيها إنك إنت اللي بتشتغل، قبل ما تقدر '
-            'تبقى متصل وتستقبل الطلبات.',
+            'نطلب منك كل يوم صورة سريعة نتأكّد بها أنك أنت من يعمل، قبل أن تتمكّن '
+            'تبقى متصلاً وتستقبل الطلبات.',
             style: TextStyle(
               fontFamily: 'Cairo',
               fontSize: 14,
@@ -204,7 +204,7 @@ class _ResultCard extends StatelessWidget {
           QColors.danger,
           QColors.danger,
           '✕',
-          'التحقق اتـرفض — جرّب تاني',
+          'رُفض التحقّق — حاول مرة أخرى',
         ),
     };
 
@@ -283,8 +283,8 @@ class _ProvisionalNote extends StatelessWidget {
       ),
       child: Text.rich(
         TextSpan(
-          text: 'ℹ️ المطابقة البيومترية الأوتوماتيكية لسه مش مفعّلة (المزوّد ',
-          style: const TextStyle(
+          text: 'ℹ️ المطابقة البيومترية الآلية غير مفعَّلة بعد (المزوّد ',
+          style: TextStyle(
             fontFamily: 'Cairo',
             fontSize: 12,
             fontWeight: FontWeight.w700,
@@ -318,7 +318,7 @@ class _Steps extends StatelessWidget {
       child: Column(
         children: [
           for (var i = 0; i < _items.length; i++) ...[
-            if (i != 0) const Divider(color: QColors.line, height: 1),
+            if (i != 0) Divider(color: QColors.line, height: 1),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Row(
@@ -346,11 +346,11 @@ void _snack(BuildContext context, String message) {
     ..hideCurrentSnackBar()
     ..showSnackBar(
       SnackBar(
-        backgroundColor: QColors.ink,
+        backgroundColor: QColors.inkSurface,
         behavior: SnackBarBehavior.floating,
         content: Text(
           message,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Cairo',
             fontSize: 13.5,
             fontWeight: FontWeight.w700,

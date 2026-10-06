@@ -11,6 +11,7 @@ import 'core/api_client.dart';
 import 'core/router.dart';
 import 'core/socket_service.dart';
 import 'core/theme.dart';
+import 'providers/theme_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,10 +52,18 @@ class _CaptainAppState extends ConsumerState<CaptainApp> {
 
   @override
   Widget build(BuildContext context) {
+    final mode = ref.watch(themeModeProvider);
+
+    // `QColors.active` لازم تتظبّط **قبل** `buildCaptainTheme()`: الثيم بيقرا من
+    // الـ getters، فلو الترتيب اتقلب الثيم بيتبنى بألوان الوضع القديم.
+    applyPalette(mode, MediaQuery.platformBrightnessOf(context));
+
     return MaterialApp.router(
       title: 'قادر فود — كابتن',
       debugShowCheckedModeBanner: false,
       theme: buildCaptainTheme(),
+      darkTheme: buildCaptainTheme(brightness: Brightness.dark),
+      themeMode: mode,
       routerConfig: _router,
       locale: const Locale('ar'),
       supportedLocales: const [Locale('ar')],
@@ -63,10 +72,15 @@ class _CaptainAppState extends ConsumerState<CaptainApp> {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      builder: (context, child) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: child ?? const SizedBox.shrink(),
-      ),
+      // تاني مرة عن قصد: الشجرة بتتبنى تاني لما وضع الجهاز يتغيّر والتطبيق
+      // شغّال، فلازم الـ palette تكون مظبوطة هنا كمان.
+      builder: (context, child) {
+        applyPalette(mode, MediaQuery.platformBrightnessOf(context));
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
     );
   }
 }

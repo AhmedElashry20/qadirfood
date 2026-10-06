@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query, UseGua
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 import { OrdersService } from './orders.service';
+import { OrderChatService } from './order-chat.service';
 import {
   AcceptOrderDto,
   CancelOrderDto,
@@ -9,6 +10,7 @@ import {
   CreateReviewDto,
   DeliveredDto,
   ListOrdersDto,
+  SendOrderMessageDto,
   PickupDto,
   RejectOrderDto,
 } from './orders.dto';
@@ -20,7 +22,10 @@ import { PermissionsGuard, RequirePermission } from '../common/permissions';
 @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
 @Controller('orders')
 export class OrdersController {
-  constructor(private readonly orders: OrdersService) {}
+  constructor(
+    private readonly orders: OrdersService,
+    private readonly chat: OrderChatService,
+  ) {}
 
   // ── العميل ──
   @Post()
@@ -124,6 +129,37 @@ export class OrdersController {
   @ApiOperation({ summary: 'سجل الطلبات بفلاتر (شاشة ٦)' })
   list(@CurrentUser() user: AuthUser, @Query() query: ListOrdersDto) {
     return this.orders.list(user, query);
+  }
+
+  // ── محادثة الطلب (عميل ↔ مندوب) ──
+  // مفتوحة من إسناد المندوب لحد التسليم. الأدمن بيقرا ومابيكتبش.
+
+  @Get(':id/messages')
+  @ApiOperation({ summary: 'رسايل محادثة الطلب + حالة المحادثة' })
+  messages(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.chat.list(user, id);
+  }
+
+  @Post(':id/messages')
+  @ApiOperation({ summary: 'إرسال رسالة في محادثة الطلب' })
+  sendMessage(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SendOrderMessageDto,
+  ) {
+    return this.chat.send(user, id, dto.body);
+  }
+
+  @Patch(':id/messages/read')
+  @ApiOperation({ summary: 'تعليم رسايل الطرف الآخر كمقروءة' })
+  readMessages(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.chat.markRead(user, id);
+  }
+
+  @Get(':id/events')
+  @ApiOperation({ summary: 'سجل أحداث الطلب — من فعل ماذا ومتى' })
+  events(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.orders.events(user, id);
   }
 
   @Get(':id')

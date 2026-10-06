@@ -60,7 +60,7 @@ class BranchNotifier extends AsyncNotifier<Branch> {
   Future<Branch> _load() {
     final id = ref.read(branchIdProvider);
     if (id == null || id.isEmpty) {
-      throw ApiException('تعذّر تحديد الفرع من الجلسة — سجّل الدخول من جديد');
+      throw const ApiException('تعذّر تحديد الفرع من الجلسة — سجّل الدخول من جديد');
     }
     return ref.read(branchRepositoryProvider).current(id);
   }

@@ -32,12 +32,12 @@ class PickupScreen extends ConsumerWidget {
     final tripAsync = ref.watch(tripProvider(orderId));
 
     return tripAsync.when(
-      loading: () => const Scaffold(backgroundColor: QColors.canvas, body: QLoading()),
+      loading: () => Scaffold(backgroundColor: QColors.canvas, body: const QLoading()),
       error: (error, _) => Scaffold(
         backgroundColor: QColors.canvas,
         appBar: const QHeader(title: 'استلام الطلب'),
         body: QErrorView(
-          message: error is ApiException ? error.message : 'مش قادرين نجيب بيانات الطلب',
+          message: error is ApiException ? error.message : 'تعذّر تحميل بيانات الطلب',
           onRetry: () => ref.invalidate(tripProvider(orderId)),
         ),
       ),
@@ -83,7 +83,7 @@ class _PickupFormState extends ConsumerState<_PickupForm> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _submitting = false);
-      _snack(context, 'مش قادرين نأكّد الاستلام — جرّب تاني');
+      _snack(context, 'تعذّر تأكيد الاستلام — حاول مرة أخرى');
     }
   }
 
@@ -97,7 +97,7 @@ class _PickupFormState extends ConsumerState<_PickupForm> {
         title: 'استلام الطلب ${fmt.ltr(trip.number)}',
         subtitle: Text(
           trip.restaurantName,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Cairo',
             fontSize: 12,
             fontWeight: FontWeight.w700,
@@ -177,7 +177,7 @@ class _PickupCodeBanner extends StatelessWidget {
                   ),
                 ],
               ),
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Cairo',
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
@@ -208,10 +208,10 @@ class _ItemsChecklist extends StatelessWidget {
           Text('تحقق من الأصناف', style: QText.section.copyWith(fontSize: 14)),
           const SizedBox(height: 10),
           if (trip.items.isEmpty)
-            Text('مافيش أصناف في الطلب', style: QText.tiny.copyWith(color: QColors.faint))
+            Text('لا توجد أصناف في الطلب', style: QText.tiny.copyWith(color: QColors.faint))
           else
             for (var i = 0; i < trip.items.length; i++) ...[
-              if (i != 0) const Divider(color: QColors.line, height: 18),
+              if (i != 0) Divider(color: QColors.line, height: 18),
               _ItemRow(
                 item: trip.items[i],
                 checked: checked[i],
@@ -222,7 +222,7 @@ class _ItemsChecklist extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               '📝 ${trip.customerNotes!.trim()}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Cairo',
                 fontSize: 12.5,
                 fontWeight: FontWeight.w700,
@@ -303,7 +303,7 @@ class _CoolerCard extends StatelessWidget {
                 Text('🧊 الطلب يحتاج حقيبة تبريد؟', style: QText.body.copyWith(fontSize: 14)),
                 const SizedBox(height: 2),
                 Text(
-                  '(محلي — مافيش حقل في الـ API)',
+                  '(محلي — لا يوجد حقل في الـ API)',
                   style: QText.tiny.copyWith(color: QColors.faint, fontWeight: FontWeight.w600),
                 ),
               ],
@@ -347,7 +347,7 @@ void _snack(BuildContext context, String message) {
     ..hideCurrentSnackBar()
     ..showSnackBar(
       SnackBar(
-        backgroundColor: QColors.ink,
+        backgroundColor: QColors.inkSurface,
         content: Text(
           message,
           style: QText.body.copyWith(fontSize: 14, color: QColors.brand),

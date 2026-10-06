@@ -37,7 +37,7 @@ class RateScreen extends ConsumerWidget {
       body: tripAsync.when(
         loading: () => const QLoading(),
         error: (error, _) => QErrorView(
-          message: error is ApiException ? error.message : 'مش قادرين نجيب بيانات الرحلة',
+          message: error is ApiException ? error.message : 'تعذّر تحميل بيانات الرحلة',
           onRetry: () => ref.invalidate(tripProvider(orderId)),
         ),
         data: (trip) => ListView(
@@ -83,7 +83,7 @@ class _SuccessBlock extends StatelessWidget {
             width: 64,
             height: 64,
             alignment: Alignment.center,
-            decoration: const BoxDecoration(color: QColors.success, shape: BoxShape.circle),
+            decoration: BoxDecoration(color: QColors.success, shape: BoxShape.circle),
             child: const Icon(Icons.check, size: 34, color: Colors.white),
           ),
           const SizedBox(height: 14),
@@ -122,15 +122,15 @@ class _DisabledStars extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               for (var i = 0; i < 5; i++)
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 4),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: Icon(Icons.star_rounded, size: 34, color: QColors.border),
                 ),
             ],
           ),
           const SizedBox(height: 12),
           Text(
-            'تقييم العميل مش مدعوم في الـ API',
+            'تقييم العميل غير مدعوم في الـ API',
             textAlign: TextAlign.center,
             style: QText.tiny.copyWith(color: QColors.faint, fontWeight: FontWeight.w600),
           ),

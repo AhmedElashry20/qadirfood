@@ -26,7 +26,7 @@ export class SupportService {
         where: { id: dto.orderId, customerId },
         select: { id: true },
       });
-      if (!order) throw new BadRequestException('الطلب مش بتاعك أو مش موجود');
+      if (!order) throw new BadRequestException('الطلب ليس طلبك أو غير موجود');
     }
 
     const ticket = await this.prisma.$transaction(async (tx) => {
@@ -122,7 +122,7 @@ export class SupportService {
 
     const isAdmin = viewer.role === UserRole.ADMIN;
     if (!isAdmin && ticket.customerId !== viewer.customerId) {
-      throw new ForbiddenException('التذكرة دي مش بتاعتك');
+      throw new ForbiddenException('هذه التذكرة ليست تذكرتك');
     }
     return this.detailById(id, isAdmin);
   }
@@ -134,7 +134,7 @@ export class SupportService {
 
     const isAdmin = viewer.role === UserRole.ADMIN;
     if (!isAdmin && ticket.customerId !== viewer.customerId) {
-      throw new ForbiddenException('التذكرة دي مش بتاعتك');
+      throw new ForbiddenException('هذه التذكرة ليست تذكرتك');
     }
     if (ticket.status === TicketStatus.CLOSED) {
       throw new BadRequestException('التذكرة مقفولة — افتح تذكرة جديدة');

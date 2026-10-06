@@ -22,6 +22,9 @@ export const ServerEvents = {
   CAPTAIN_LOCATION: 'captain:location', // تتبع لحظي على الخريطة
   ETA_UPDATED: 'order:eta_updated',
 
+  // ── محادثة الطلب (عميل ↔ مندوب) ──
+  ORDER_MESSAGE: 'order:message',
+
   // ── مشترك ──
   BRANCH_STATUS_CHANGED: 'branch:status_changed',
   ERROR: 'error',
@@ -91,4 +94,12 @@ export interface BranchStatusChangedPayload {
 export interface CaptainStatusUpdatePayload {
   status: CaptainStatus;
   location?: LatLng;
+}
+
+export interface OrderMessagePayload {
+  id: string;
+  orderId: string;
+  senderRole: 'CUSTOMER' | 'CAPTAIN' | 'SYSTEM';
+  body: string;
+  createdAt: string; // ISO
 }

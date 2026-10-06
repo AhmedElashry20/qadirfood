@@ -67,7 +67,7 @@ class HomeScreen extends ConsumerWidget {
     final center = ref.read(locationBroadcasterProvider).lastKnown ?? kRiyadh;
 
     return Scaffold(
-      backgroundColor: QColors.ink,
+      backgroundColor: QColors.inkSurface,
       body: Stack(
         children: [
           Positioned.fill(
@@ -120,13 +120,13 @@ class _AvatarTile extends ConsumerWidget {
         height: 44,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: QColors.ink,
+          color: QColors.inkSurface,
           borderRadius: BorderRadius.circular(QRadius.md),
           boxShadow: kFloatShadow,
         ),
         child: Text(
           initial,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Cairo',
             fontSize: 18,
             fontWeight: FontWeight.w900,
@@ -164,7 +164,7 @@ class _StatusPill extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             status.ar,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Cairo',
               fontSize: 12.5,
               fontWeight: FontWeight.w800,
@@ -198,9 +198,9 @@ class _BottomSheet extends ConsumerWidget {
       // الشيت جوّه Stack فوق خريطة full-bleed، فهو راكب عليها أصلاً — ده اللي
       // التصميم بيسمّيه «تداخل ٢٤ بكسل» (نفس مقدار راديوس الشيت).
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
-      decoration: const BoxDecoration(
-        color: QColors.ink,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(QRadius.sheet)),
+      decoration: BoxDecoration(
+        color: QColors.inkSurface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(QRadius.sheet)),
       ),
       child: SafeArea(
         top: false,
@@ -267,7 +267,7 @@ class _BottomSheet extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    const Icon(Icons.chevron_left, color: QColors.faint),
+                    Icon(Icons.chevron_left, color: QColors.faint),
                   ],
                 ),
               ),
@@ -322,7 +322,7 @@ class _Kpi extends StatelessWidget {
           Text(
             label,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Cairo',
               fontSize: 11,
               fontWeight: FontWeight.w700,
@@ -355,11 +355,11 @@ class _FaceGateCard extends StatelessWidget {
             children: [
               const Text('🤳', style: TextStyle(fontSize: 24)),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'مطلوب تحقّق يومي بالوجه',
                       style: TextStyle(
                         fontFamily: 'Cairo',
@@ -368,7 +368,7 @@ class _FaceGateCard extends StatelessWidget {
                         color: Colors.white,
                       ),
                     ),
-                    SizedBox(height: 2),
+                    const SizedBox(height: 2),
                     Text(
                       'صوّر سيلفي قبل ما تبدأ الشغل',
                       style: TextStyle(
@@ -388,7 +388,7 @@ class _FaceGateCard extends StatelessWidget {
                   color: QColors.brand,
                   borderRadius: BorderRadius.circular(QRadius.pill),
                 ),
-                child: const Text(
+                child: Text(
                   'ابدأ التحقق',
                   style: TextStyle(
                     fontFamily: 'Cairo',
@@ -431,7 +431,7 @@ class _ActiveTripCard extends StatelessWidget {
                     Text.rich(
                       TextSpan(
                         text: 'عندك رحلة شغالة — ',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Cairo',
                           fontSize: 15,
                           fontWeight: FontWeight.w900,
@@ -448,7 +448,7 @@ class _ActiveTripCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       trip.stepLabel,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Cairo',
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -459,7 +459,7 @@ class _ActiveTripCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              const Text(
+              Text(
                 'افتح الرحلة ←',
                 style: TextStyle(
                   fontFamily: 'Cairo',

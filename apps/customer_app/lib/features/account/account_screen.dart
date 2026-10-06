@@ -70,6 +70,18 @@ class AccountScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 10),
                 _MenuCard(
+                  title: 'نقاطي',
+                  emoji: '⭐',
+                  onTap: () => context.push(QRoutes.loyalty),
+                ),
+                const SizedBox(height: 10),
+                _MenuCard(
+                  title: 'ادعُ أصدقاءك',
+                  emoji: '🤝',
+                  onTap: () => context.push(QRoutes.referral),
+                ),
+                const SizedBox(height: 10),
+                _MenuCard(
                   title: 'الإشعارات',
                   emoji: '🔔',
                   onTap: () => context.push(QRoutes.notifications),
@@ -122,9 +134,9 @@ class _AccountHeader extends ConsumerWidget {
     final favorites = me == null ? '—' : '${me.favoritesCount}';
 
     return Container(
-      decoration: const BoxDecoration(
-        color: QColors.ink,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
+      decoration: BoxDecoration(
+        color: QColors.inkSurface,
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
       ),
       child: SafeArea(
         bottom: false,
@@ -140,7 +152,7 @@ class _AccountHeader extends ConsumerWidget {
                     width: 64,
                     height: 64,
                     alignment: Alignment.center,
-                    decoration: const BoxDecoration(color: QColors.brand, shape: BoxShape.circle),
+                    decoration: BoxDecoration(color: QColors.brand, shape: BoxShape.circle),
                     child: Text(initial, style: QText.num(size: 24, color: QColors.ink)),
                   ),
                   const SizedBox(width: 14),
@@ -164,7 +176,7 @@ class _AccountHeader extends ConsumerWidget {
                           textDirection: TextDirection.ltr,
                           child: Text(
                             me?.phone ?? '',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontFamily: 'Outfit',
                               fontSize: 12.5,
                               fontWeight: FontWeight.w600,
@@ -186,7 +198,7 @@ class _AccountHeader extends ConsumerWidget {
                           color: QColors.brand,
                           borderRadius: BorderRadius.circular(QRadius.pill),
                         ),
-                        child: const Text(
+                        child: Text(
                           'إعادة المحاولة',
                           style: TextStyle(
                             fontFamily: 'Cairo',
@@ -239,7 +251,7 @@ class _StatBox extends StatelessWidget {
           Text(
             label,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Cairo',
               fontSize: 11,
               fontWeight: FontWeight.w700,
@@ -281,7 +293,7 @@ void _snack(BuildContext context, String message) {
       SnackBar(
         content: Text(message, style: QText.body.copyWith(color: QColors.brand)),
         behavior: SnackBarBehavior.floating,
-        backgroundColor: QColors.ink,
+        backgroundColor: QColors.inkSurface,
         duration: const Duration(seconds: 3),
       ),
     );

@@ -33,7 +33,7 @@ class MerchantShell extends ConsumerWidget {
         ],
       ),
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: QColors.surface,
           border: Border(top: BorderSide(color: QColors.line)),
         ),
@@ -112,17 +112,17 @@ class OfflineBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: QColors.danger,
-      child: SafeArea(
+      child: const SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: QSpace.screenH, vertical: 10),
+          padding: EdgeInsets.symmetric(horizontal: QSpace.screenH, vertical: 10),
           child: Row(
             children: [
-              const Icon(Icons.wifi_off_rounded, size: 20, color: Colors.white),
-              const SizedBox(width: 10),
-              const Expanded(
+              Icon(Icons.wifi_off_rounded, size: 20, color: Colors.white),
+              SizedBox(width: 10),
+              Expanded(
                 child: Text(
-                  'مافيش اتصال بالإنترنت — الطلبات الجديدة مش هتوصل',
+                  'لا يوجد اتصال بالإنترنت — لن تصل الطلبات الجديدة',
                   style: TextStyle(
                     fontFamily: 'Cairo',
                     fontSize: 13.5,

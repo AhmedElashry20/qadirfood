@@ -22,7 +22,7 @@ describe('ZATCA QR (TLV encoding)', () => {
     expect(decoded[5]).toBe(sample.vatTotal);
   });
 
-  it('الطول بالبايتات: اسم البائع العربي (١٦ حرف) بيتخزّن طوله ٢٩ بايت مش ١٦', () => {
+  it('الطول بالبايتات: اسم البائع العربي (١٦ حرفاً) يُخزَّن طوله ٢٩ بايت لا ١٦', () => {
     const buf = Buffer.from(encodeZatcaQr(sample), 'base64');
     // buf[0] = tag(1), buf[1] = length byte. القيمة UTF-8 للعربي أطول من عدد الحروف.
     const lengthByte = buf[1];

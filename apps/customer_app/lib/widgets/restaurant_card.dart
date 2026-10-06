@@ -101,7 +101,7 @@ class RestaurantCard extends StatelessWidget {
                             width: 34,
                             height: 34,
                             decoration:
-                                const BoxDecoration(color: QColors.surface, shape: BoxShape.circle),
+                                BoxDecoration(color: QColors.surface, shape: BoxShape.circle),
                             child: Icon(
                               isFavorite! ? Icons.favorite : Icons.favorite_border,
                               size: 17,

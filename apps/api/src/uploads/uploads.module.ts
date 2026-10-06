@@ -111,10 +111,10 @@ export class UploadsController {
     @UploadedFile() file: Express.Multer.File,
     @Body() dto: UploadDto,
   ) {
-    if (!file) throw new BadRequestException('مافيش ملف مرفوع');
+    if (!file) throw new BadRequestException('لا يوجد ملف مرفوع');
 
     if (!ALLOWED_MIME[file.mimetype]) {
-      throw new BadRequestException('نوع الملف غير مدعوم — الصور و PDF بس');
+      throw new BadRequestException('نوع الملف غير مدعوم — الصور وملفات PDF فقط');
     }
     if (file.size > MAX_BYTES) {
       throw new BadRequestException('حجم الملف أكبر من ٨ ميجا');

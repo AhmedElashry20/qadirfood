@@ -107,6 +107,25 @@ class OrderStatusEvent {
 /// نتيجة الرد على عرض (trip:offer_result) — القبول سباق بين الكباتن.
 typedef OfferResult = ({String orderId, bool accepted, bool won});
 
+/// رسالة جديدة في محادثة الطلب (order:message) — من العميل أو صدى رسالة المندوب.
+class OrderMessageEvent {
+  const OrderMessageEvent({
+    required this.id,
+    required this.orderId,
+    required this.senderRole,
+    required this.body,
+    this.at,
+  });
+
+  final String id;
+  final String orderId;
+
+  /// CUSTOMER · CAPTAIN · SYSTEM
+  final String senderRole;
+  final String body;
+  final DateTime? at;
+}
+
 class SocketService {
   SocketService(this._tokens);
 
@@ -118,6 +137,7 @@ class SocketService {
   final _offerResults = StreamController<OfferResult>.broadcast();
   final _ready = StreamController<OrderReadyEvent>.broadcast();
   final _statusChanges = StreamController<OrderStatusEvent>.broadcast();
+  final _orderMessage = StreamController<OrderMessageEvent>.broadcast();
 
   Stream<TripOfferEvent> get tripOffers => _offers.stream;
 
@@ -126,6 +146,9 @@ class SocketService {
   Stream<OfferResult> get offerResults => _offerResults.stream;
   Stream<OrderReadyEvent> get orderReady => _ready.stream;
   Stream<OrderStatusEvent> get statusChanges => _statusChanges.stream;
+
+  /// رسايل محادثة الطلب مع العميل.
+  Stream<OrderMessageEvent> get orderMessages => _orderMessage.stream;
 
   bool get isConnected => _socket?.connected ?? false;
 
@@ -170,6 +193,19 @@ class SocketService {
           orderId: map['orderId'] as String,
           orderNumber: (map['orderNumber'] as String?) ?? '',
           pickupCode: (map['pickupCode'] as String?) ?? '',
+        ),
+      );
+    });
+
+    _socket!.on('order:message', (data) {
+      final map = Map<String, dynamic>.from(data as Map);
+      _orderMessage.add(
+        OrderMessageEvent(
+          id: (map['id'] as String?) ?? '',
+          orderId: (map['orderId'] as String?) ?? '',
+          senderRole: (map['senderRole'] as String?) ?? 'SYSTEM',
+          body: (map['body'] as String?) ?? '',
+          at: DateTime.tryParse((map['createdAt'] as String?) ?? '')?.toLocal(),
         ),
       );
     });

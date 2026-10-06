@@ -20,6 +20,8 @@ dependencies:
   latlong2: ^0.10.1
   shared_preferences: ^2.5.5
   socket_io_client: ^3.1.6
+  # للوصول إلى window وقراءة إعداد الـ API وقت التشغيل على الويب
+  web: ^1.1.0
   webview_flutter: ^4.13.0
 
 dev_dependencies:

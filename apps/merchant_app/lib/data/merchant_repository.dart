@@ -162,7 +162,7 @@ enum ReportRange {
 // ─────────────────────────── الدخول ───────────────────────────
 
 class AuthRepository {
-  AuthRepository(this._api);
+  const AuthRepository(this._api);
 
   final ApiClient _api;
 
@@ -204,7 +204,7 @@ class AuthRepository {
 // ─────────────────────────── الطلبات ───────────────────────────
 
 class OrdersRepository {
-  OrdersRepository(this._api);
+  const OrdersRepository(this._api);
 
   final ApiClient _api;
 
@@ -288,7 +288,7 @@ class OrdersRepository {
 // ─────────────────────────── الفرع ───────────────────────────
 
 class BranchRepository {
-  BranchRepository(this._api);
+  const BranchRepository(this._api);
 
   final ApiClient _api;
 
@@ -337,7 +337,7 @@ class BranchRepository {
 // ─────────────────────────── المنيو ───────────────────────────
 
 class MenuRepository {
-  MenuRepository(this._api);
+  const MenuRepository(this._api);
 
   final ApiClient _api;
 
@@ -431,7 +431,7 @@ class MenuRepository {
 // ─────────────────────────── التقارير ───────────────────────────
 
 class ReportsRepository {
-  ReportsRepository(this._api);
+  const ReportsRepository(this._api);
 
   final ApiClient _api;
 

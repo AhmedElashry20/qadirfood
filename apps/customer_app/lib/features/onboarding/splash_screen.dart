@@ -38,9 +38,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: QColors.ink,
-      body: SafeArea(
+    return Scaffold(
+      backgroundColor: QColors.inkSurface,
+      body: const SafeArea(
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,

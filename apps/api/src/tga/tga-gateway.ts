@@ -51,7 +51,7 @@ export class ManualTgaGateway extends TgaGateway {
     const now = new Date();
 
     if (!input.cardNumber?.trim()) {
-      return { status: 'PENDING', checkedAt: now, reason: 'مافيش رقم بطاقة', provider: this.name };
+      return { status: 'PENDING', checkedAt: now, reason: 'لا يوجد رقم بطاقة', provider: this.name };
     }
     if (input.expiresAt && input.expiresAt.getTime() < now.getTime()) {
       return { status: 'REJECTED', checkedAt: now, reason: 'بطاقة التوصيل منتهية', provider: this.name };

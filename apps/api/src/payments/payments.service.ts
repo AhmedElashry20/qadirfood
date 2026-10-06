@@ -16,6 +16,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { AuditAction, PaymentMethod, PaymentStatus, Prisma, RefundLiability, RefundStatus, UserRole } from '@prisma/client';
+import { chargeableTotal } from '../orders/order-pricing';
 import { ConfigService } from '@nestjs/config';
 import Decimal from 'decimal.js';
 import { commissionToReverse as computeCommissionReverse } from './refund-policy';
@@ -110,7 +111,9 @@ export class PaymentsService {
         orderId: order.id,
         provider: gateway.name,
         method: order.paymentMethod,
-        amount: order.total,
+        // المبلغ المحصّل = فاتورة الطلب + الإكرامية. `order.total` لوحده هو
+        // التوريد الخاضع للضريبة بس — الإكرامية مش جواه عن قصد.
+        amount: chargeableTotal(order.total, order.tipAmount),
         status: PaymentStatus.PENDING,
       },
     });
@@ -123,7 +126,7 @@ export class PaymentsService {
       const result = await gateway.charge({
         orderId: order.id,
         orderNumber: order.orderNumber,
-        amount: Number(order.total),
+        amount: chargeableTotal(order.total, order.tipAmount).toNumber(),
         method: order.paymentMethod,
       });
 
@@ -264,7 +267,12 @@ export class PaymentsService {
 
     const uncollected =
       order.paymentStatus === PaymentStatus.PENDING || order.paymentStatus === PaymentStatus.FAILED;
-    const paid = uncollected ? new Decimal(0) : new Decimal(order.total.toString());
+    // المدفوع يشمل الإكرامية — العميل دفعها فعلاً، فلو الطلب اترد كامل قبل
+    // التسليم لازم ترجع له. `commissionToReverse` بتقيّد نسبتها بـ ١ عشان
+    // الإكرامية مالهاش عمولة.
+    const paid = uncollected
+      ? new Decimal(0)
+      : chargeableTotal(order.total.toString(), order.tipAmount.toString());
     const refunded = refunds.reduce((sum, r) => sum.plus(r.amount.toString()), new Decimal(0));
     return { order, paid, refunded, remaining: Decimal.max(0, paid.minus(refunded)) };
   }
@@ -276,7 +284,7 @@ export class PaymentsService {
    * المجموع ويعدّوا الاتنين، فيترد أكتر من المدفوع.
    */
   async refund(user: AuthUser, orderId: string, dto: CreateRefundDto) {
-    if (user.role !== UserRole.ADMIN) throw new ForbiddenException('الاسترداد للأدمن بس');
+    if (user.role !== UserRole.ADMIN) throw new ForbiddenException('الاسترداد متاح للإدارة فقط');
 
     let orderNumber = orderId;
     const created = await this.prisma.$transaction(async (tx) => {
@@ -286,10 +294,10 @@ export class PaymentsService {
       orderNumber = order.orderNumber; // للسجل — أوضح من الـ UUID
 
       if (order.paymentStatus === PaymentStatus.PENDING) {
-        throw new BadRequestException('الطلب لسه ماتدفعش — مافيش مبلغ يترد');
+        throw new BadRequestException('الطلب لم يُدفَع بعد — لا يوجد مبلغ للاسترداد');
       }
       if (order.paymentStatus === PaymentStatus.FAILED) {
-        throw new BadRequestException('عملية الدفع فشلت أصلاً — مافيش مبلغ يترد');
+        throw new BadRequestException('عملية الدفع فشلت أساساً — لا يوجد مبلغ للاسترداد');
       }
       if (remaining.lte(0)) {
         throw new BadRequestException(`الطلب استرد بالكامل (${refunded.toFixed(2)} ر.س)`);
@@ -353,14 +361,14 @@ export class PaymentsService {
    * نفس الشخص بيطلب ويوافق على فلوس كبيرة.
    */
   async approveRefund(user: AuthUser, refundId: string) {
-    if (user.role !== UserRole.ADMIN) throw new ForbiddenException('الموافقة للأدمن بس');
+    if (user.role !== UserRole.ADMIN) throw new ForbiddenException('الموافقة متاحة للإدارة فقط');
     const refund = await this.prisma.refund.findUnique({ where: { id: refundId } });
     if (!refund) throw new NotFoundException('الاسترداد غير موجود');
     if (refund.status !== RefundStatus.AWAITING_APPROVAL) {
-      throw new BadRequestException('الاسترداد ده مش مستني موافقة');
+      throw new BadRequestException('هذا الاسترداد لا ينتظر موافقة');
     }
     if (refund.createdById && refund.createdById === user.userId) {
-      throw new ForbiddenException('ماينفعش توافق على استرداد إنت طلبته — لازم أدمن تاني');
+      throw new ForbiddenException('لا يمكنك الموافقة على استرداد طلبته أنت — يلزم مسؤول آخر');
     }
 
     // مطالبة ذرّية: بننقل الحالة من AWAITING_APPROVAL لـ PENDING بشرط إنها لسه
@@ -390,17 +398,17 @@ export class PaymentsService {
 
   /** أدمن تاني بيرفض الموافقة — الاسترداد ما بيتنفّذش وبيتحرّر من حجز السعة. */
   async rejectRefundApproval(user: AuthUser, refundId: string, reason: string) {
-    if (user.role !== UserRole.ADMIN) throw new ForbiddenException('الرفض للأدمن بس');
+    if (user.role !== UserRole.ADMIN) throw new ForbiddenException('الرفض متاح للإدارة فقط');
     const trimmed = reason?.trim();
     if (!trimmed) throw new BadRequestException('سبب الرفض مطلوب');
 
     const refund = await this.prisma.refund.findUnique({ where: { id: refundId } });
     if (!refund) throw new NotFoundException('الاسترداد غير موجود');
     if (refund.status !== RefundStatus.AWAITING_APPROVAL) {
-      throw new BadRequestException('الاسترداد ده مش مستني موافقة');
+      throw new BadRequestException('هذا الاسترداد لا ينتظر موافقة');
     }
     if (refund.createdById && refund.createdById === user.userId) {
-      throw new ForbiddenException('ماينفعش ترفض استرداد إنت طلبته — لازم أدمن تاني');
+      throw new ForbiddenException('لا يمكنك رفض استرداد طلبته أنت — يلزم مسؤول آخر');
     }
 
     const updated = await this.prisma.refund.update({
@@ -574,7 +582,7 @@ export class PaymentsService {
   async settleRefund(user: AuthUser, refundId: string, noteAr?: string) {
     const refund = await this.prisma.refund.findUnique({ where: { id: refundId } });
     if (!refund) throw new NotFoundException('الاسترداد غير موجود');
-    if (refund.status === RefundStatus.COMPLETED) throw new BadRequestException('الاسترداد متسوّي خلاص');
+    if (refund.status === RefundStatus.COMPLETED) throw new BadRequestException('الاسترداد مُسوّى بالفعل');
     if (refund.status === RefundStatus.FAILED) {
       throw new BadRequestException('الاسترداد فشل — أعد المحاولة بدل التسوية اليدوية');
     }
@@ -607,7 +615,7 @@ export class PaymentsService {
     const refund = await this.prisma.refund.findUnique({ where: { id: refundId } });
     if (!refund) throw new NotFoundException('الاسترداد غير موجود');
     if (refund.status !== RefundStatus.FAILED) {
-      throw new BadRequestException('إعادة المحاولة للاستردادات الفاشلة بس');
+      throw new BadRequestException('إعادة المحاولة متاحة للاستردادات الفاشلة فقط');
     }
 
     // نفس مبدأ المطالبة الذرّية: من FAILED لـ PENDING بشرط إنها لسه FAILED.
@@ -617,7 +625,7 @@ export class PaymentsService {
       data: { status: RefundStatus.PENDING, failReason: null },
     });
     if (claimed.count === 0) {
-      throw new ConflictException('الاسترداد مش في حالة فشل دلوقتي — يمكن اتنفّذ أو اتعاد بالفعل');
+      throw new ConflictException('الاسترداد ليس في حالة فشل الآن — قد يكون نُفِّذ أو أُعيدت محاولته بالفعل');
     }
     if (actor) {
       await this.audit.record(actor, AuditAction.REFUND_RETRY, 'refund', refundId, `إعادة محاولة استرداد ${Number(refund.amount).toFixed(2)} ر.س`, {
@@ -645,7 +653,7 @@ export class PaymentsService {
       throw new ForbiddenException();
     }
     if (user.role !== UserRole.CUSTOMER && user.role !== UserRole.ADMIN) {
-      throw new ForbiddenException('غير مصرح');
+      throw new ForbiddenException('غير مصرَّح لك');
     }
 
     const { paid, refunded, remaining } = await this.refundableAmount(orderId);

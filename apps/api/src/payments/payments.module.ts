@@ -72,7 +72,7 @@ export class PaymentsController {
   @Post('refunds/:id/approve')
   @Roles(UserRole.ADMIN)
   @RequirePermission('payments.refund')
-  @ApiOperation({ summary: 'موافقة أدمن تاني على استرداد كبير وتنفيذه' })
+  @ApiOperation({ summary: 'موافقة مسؤول آخر على استرداد كبير وتنفيذه' })
   approve(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.payments.approveRefund(user, id);
   }
@@ -133,12 +133,12 @@ export class PaymentsWebhookController {
     // /payments/moyasar/webhook اللي بيعيد التأكد من ميسّر — فبنقفل ده تماماً
     // عشان ماحدّش يزوّر حالة دفع حتى لو السرّ اتسرّب.
     if (this.config.get<string>('PAYMENT_PROVIDER') === 'moyasar') {
-      throw new UnauthorizedException('الـ webhook العام مقفول — استخدم webhook البوابة');
+      throw new UnauthorizedException('الـ webhook العام مُقفَل — استخدم webhook البوابة');
     }
     const expected = this.config.get<string>('PAYMENTS_WEBHOOK_SECRET');
     if (!expected) {
-      this.logger.error('PAYMENTS_WEBHOOK_SECRET مش متظبّط — الـ webhook مقفول');
-      throw new UnauthorizedException('الـ webhook غير مفعّل');
+      this.logger.error('PAYMENTS_WEBHOOK_SECRET غير مضبوط — الـ webhook مُقفَل');
+      throw new UnauthorizedException('الـ webhook غير مفعَّل');
     }
     if (!secret || !this.matches(secret, expected)) {
       throw new UnauthorizedException('توقيع غير صحيح');
@@ -176,8 +176,8 @@ export class MoyasarWebhookController {
   webhook(@Body() body: Record<string, unknown>) {
     const expected = this.config.get<string>('MOYASAR_WEBHOOK_SECRET');
     if (!expected) {
-      this.logger.error('MOYASAR_WEBHOOK_SECRET مش متظبّط — الـ webhook مقفول');
-      throw new UnauthorizedException('الـ webhook غير مفعّل');
+      this.logger.error('MOYASAR_WEBHOOK_SECRET غير مضبوط — الـ webhook مُقفَل');
+      throw new UnauthorizedException('الـ webhook غير مفعَّل');
     }
     const token = typeof body?.secret_token === 'string' ? body.secret_token : '';
     if (!token || !this.matches(token, expected)) {

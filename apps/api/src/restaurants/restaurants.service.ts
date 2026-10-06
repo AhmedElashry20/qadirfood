@@ -1,13 +1,15 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { RestaurantStatus } from '@prisma/client';
+import { AuditAction, OrderStatus, Prisma, RestaurantStatus, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { TrackingGateway } from '../tracking/tracking.gateway';
+import { AuditService } from '../audit/audit.module';
 
 @Injectable()
 export class RestaurantsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly gateway: TrackingGateway,
+    private readonly audit: AuditService,
   ) {}
 
   // ── فتح / إغلاق / مشغول (شاشة ١١) ──
@@ -124,4 +126,189 @@ export class RestaurantsService {
       include: { user: { select: { id: true, fullName: true, phone: true, email: true, isActive: true } } },
     });
   }
+  // ────────────────────── إدارة المطاعم من اللوحة ──────────────────────
+  // الأدمن كان بيعرف الفروع من الطلبات بس: مطعم من غير طلبات كان غير موجود
+  // بالنسبة للوحة، ومافيش طريقة تقفل فرع أو تعدّل عمولة.
+
+  /**
+   * قائمة المطاعم للأدمن — بفروعها وعمولتها وحجم تشغيلها.
+   *
+   * `orderCount` بيتجمّع لكل الصفحة في استعلام واحد، مش استعلام لكل فرع.
+   */
+  async adminListRestaurants(query: {
+    q?: string;
+    isActive?: boolean;
+    page?: number;
+    pageSize?: number;
+  }) {
+    const page = query.page ?? 1;
+    const pageSize = Math.min(query.pageSize ?? 20, 100);
+    const q = query.q?.trim();
+
+    const where: Prisma.RestaurantWhereInput = {
+      ...(query.isActive === undefined ? {} : { isActive: query.isActive }),
+      ...(q
+        ? {
+            OR: [
+              { nameAr: { contains: q, mode: Prisma.QueryMode.insensitive } },
+              { nameEn: { contains: q, mode: Prisma.QueryMode.insensitive } },
+              { contactPhone: { contains: q } },
+            ],
+          }
+        : {}),
+    };
+
+    const [restaurants, total] = await this.prisma.$transaction([
+      this.prisma.restaurant.findMany({
+        where,
+        include: {
+          branches: {
+            select: {
+              id: true,
+              nameAr: true,
+              city: true,
+              status: true,
+              isActive: true,
+              deliveryFee: true,
+              minOrderTotal: true,
+              avgPrepMinutes: true,
+              rating: true,
+              ratingCount: true,
+            },
+            orderBy: { nameAr: 'asc' },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      this.prisma.restaurant.count({ where }),
+    ]);
+
+    const branchIds = restaurants.flatMap((r) => r.branches.map((b) => b.id));
+    const counts = branchIds.length
+      ? await this.prisma.order.groupBy({
+          by: ['branchId'],
+          where: { branchId: { in: branchIds }, status: OrderStatus.DELIVERED },
+          _count: { _all: true },
+        })
+      : [];
+    const byBranch = new Map(counts.map((c) => [c.branchId, c._count._all]));
+
+    const data = restaurants.map((r) => ({
+      id: r.id,
+      nameAr: r.nameAr,
+      nameEn: r.nameEn,
+      cuisineAr: r.cuisineAr,
+      logoUrl: r.logoUrl,
+      contactPhone: r.contactPhone,
+      commissionRate: Number(r.commissionRate),
+      isActive: r.isActive,
+      createdAt: r.createdAt,
+      branches: r.branches.map((b) => ({
+        ...b,
+        deliveryFee: Number(b.deliveryFee),
+        minOrderTotal: Number(b.minOrderTotal),
+        rating: Number(b.rating),
+        deliveredOrders: byBranch.get(b.id) ?? 0,
+      })),
+      deliveredOrders: r.branches.reduce((sum, b) => sum + (byBranch.get(b.id) ?? 0), 0),
+    }));
+
+    return { data, total, page, pageSize };
+  }
+
+  /**
+   * تعديل نسبة عمولة المنصة على مطعم.
+   *
+   * مابيأثّرش على طلبات قديمة: كل طلب بيخزّن عمولته وقت الإنشاء (`orders.commission`)،
+   * فالتسويات المقفولة والتقارير التاريخية ثابتة. النسبة الجديدة بتسري على
+   * الطلبات الجديدة بس.
+   */
+  async adminSetCommission(restaurantId: string, rate: number, adminUserId: string) {
+    const restaurant = await this.prisma.restaurant.findUnique({
+      where: { id: restaurantId },
+      select: { nameAr: true, commissionRate: true },
+    });
+    if (!restaurant) throw new NotFoundException('المطعم غير موجود');
+
+    const before = Number(restaurant.commissionRate);
+    const updated = await this.prisma.restaurant.update({
+      where: { id: restaurantId },
+      data: { commissionRate: rate.toFixed(2) },
+      select: { id: true, commissionRate: true },
+    });
+
+    await this.audit.record(
+      { userId: adminUserId, role: UserRole.ADMIN },
+      AuditAction.RESTAURANT_COMMISSION,
+      'restaurant',
+      restaurantId,
+      `تعديل عمولة ${restaurant.nameAr} من ${before}% إلى ${rate}%`,
+      { before, after: rate },
+    );
+
+    return { id: updated.id, commissionRate: Number(updated.commissionRate) };
+  }
+
+  /**
+   * تفعيل/إيقاف مطعم — الإيقاف بيقفل كل فروعه كمان، وإلا المطعم يبقى «موقوف»
+   * وفروعه لسه بتستقبل طلبات.
+   */
+  async adminSetRestaurantActive(restaurantId: string, isActive: boolean, adminUserId: string) {
+    const restaurant = await this.prisma.restaurant.findUnique({
+      where: { id: restaurantId },
+      select: { nameAr: true, isActive: true },
+    });
+    if (!restaurant) throw new NotFoundException('المطعم غير موجود');
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.restaurant.update({ where: { id: restaurantId }, data: { isActive } });
+      if (!isActive) {
+        await tx.branch.updateMany({
+          where: { restaurantId },
+          data: { status: RestaurantStatus.CLOSED },
+        });
+      }
+      await this.audit.record(
+        { userId: adminUserId, role: UserRole.ADMIN },
+        AuditAction.RESTAURANT_TOGGLE,
+        'restaurant',
+        restaurantId,
+        `${isActive ? 'تفعيل' : 'إيقاف'} المطعم ${restaurant.nameAr}`,
+        { isActive },
+        tx,
+      );
+    });
+
+    return { id: restaurantId, isActive };
+  }
+
+  /** فتح/إغلاق فرع من اللوحة — نفس منطق المطعم، بسطر تدقيق. */
+  async adminSetBranchStatus(
+    branchId: string,
+    status: RestaurantStatus,
+    adminUserId: string,
+    busyExtraMinutes?: number,
+  ) {
+    const branch = await this.prisma.branch.findUnique({
+      where: { id: branchId },
+      select: { nameAr: true, status: true },
+    });
+    if (!branch) throw new NotFoundException('الفرع غير موجود');
+
+    const result = await this.setStatus(branchId, status, busyExtraMinutes);
+
+    await this.audit.record(
+      { userId: adminUserId, role: UserRole.ADMIN },
+      AuditAction.RESTAURANT_TOGGLE,
+      'branch',
+      branchId,
+      `تغيير حالة فرع ${branch.nameAr} من ${branch.status} إلى ${status}`,
+      { before: branch.status, after: status },
+    );
+
+    return result;
+  }
+
 }

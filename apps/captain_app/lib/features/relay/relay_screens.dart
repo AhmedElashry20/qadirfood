@@ -25,7 +25,7 @@ Future<String?> _capture(WidgetRef ref, BuildContext ctx, {String folder = 'hand
   try {
     picked = await ImagePicker().pickImage(source: ImageSource.camera, maxWidth: 1400, imageQuality: 80);
   } catch (_) {
-    if (ctx.mounted) _snack(ctx, 'مش قادرين نفتح الكاميرا');
+    if (ctx.mounted) _snack(ctx, 'تعذّر فتح الكاميرا');
     return null;
   }
   if (picked == null) return null;
@@ -70,7 +70,7 @@ class _RelayHandoffScreenState extends ConsumerState<RelayHandoffScreen> {
   Widget build(BuildContext context) {
     final tripAsync = ref.watch(tripProvider(widget.orderId));
     return tripAsync.when(
-      loading: () => const Scaffold(backgroundColor: QColors.canvas, body: QLoading()),
+      loading: () => Scaffold(backgroundColor: QColors.canvas, body: const QLoading()),
       error: (e, _) => Scaffold(
         backgroundColor: QColors.canvas,
         appBar: const QHeader(title: 'التسليم عند الحرم'),
@@ -101,7 +101,7 @@ class _RelayHandoffScreenState extends ConsumerState<RelayHandoffScreen> {
                   Text(fmt.ltr(trip.handoffCode ?? '----'),
                       style: QText.display.copyWith(letterSpacing: 10, fontWeight: FontWeight.w900, color: QColors.brandDeep)),
                   const SizedBox(height: 6),
-                  Text('قوله لمندوب المشي عشان يدخّله ويأكّد الاستلام', style: QText.tiny.copyWith(color: QColors.label)),
+                  Text('أخبر به المندوب الراجل ليُدخله ويؤكّد الاستلام', style: QText.tiny.copyWith(color: QColors.label)),
                 ]),
               ),
               const SizedBox(height: 14),

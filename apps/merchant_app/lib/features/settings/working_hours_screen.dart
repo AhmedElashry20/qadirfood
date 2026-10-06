@@ -29,7 +29,7 @@ class _WorkingHoursScreenState extends ConsumerState<WorkingHoursScreen> {
   void _snack(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: QColors.ink,
+        backgroundColor: QColors.inkSurface,
         content: Text(message, style: QText.body.copyWith(color: QColors.brand, fontSize: 14)),
       ),
     );
@@ -131,7 +131,7 @@ class _WorkingHoursScreenState extends ConsumerState<WorkingHoursScreen> {
       ),
       child: Row(
         children: [
-          const Expanded(
+          Expanded(
             child: Text(
               '🌙 مواعيد رمضان — جدول منفصل يتفعل تلقائياً',
               style: TextStyle(
@@ -145,8 +145,8 @@ class _WorkingHoursScreenState extends ConsumerState<WorkingHoursScreen> {
           InkWell(
             onTap: () => _snack('جدول رمضان قريباً'),
             borderRadius: BorderRadius.circular(QRadius.sm),
-            child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
               child: Text(
                 'تعديل ›',
                 style: TextStyle(
@@ -176,7 +176,7 @@ class _WorkingHoursScreenState extends ConsumerState<WorkingHoursScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   '🕌 إغلاق تلقائي أثناء أوقات الصلاة',
                   style: TextStyle(
                     fontFamily: 'Cairo',
@@ -240,7 +240,7 @@ class _DayRow extends StatelessWidget {
                     hour.arabicName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Cairo',
                       fontSize: 14,
                       fontWeight: FontWeight.w800,

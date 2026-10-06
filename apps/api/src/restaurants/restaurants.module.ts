@@ -1,7 +1,20 @@
 import { Body, Controller, Get, Module, Param, ParseUUIDPipe, Patch, Query, UseGuards, forwardRef } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RestaurantStatus, UserRole } from '@prisma/client';
-import { IsArray, IsBoolean, IsEnum, IsInt, IsOptional, IsString, Max, Min, ValidateNested } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsBooleanString,
+  IsEnum,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { RestaurantsService } from './restaurants.service';
 import { CurrentUser, JwtAuthGuard, Roles, RolesGuard, type AuthUser } from '../common';
@@ -32,6 +45,26 @@ class SetWorkingHoursDto {
   @ValidateNested({ each: true })
   @Type(() => WorkingHourDto)
   hours!: WorkingHourDto[];
+}
+
+class AdminListRestaurantsDto {
+  @IsOptional() @IsString() @MaxLength(60) q?: string;
+  @IsOptional() @IsBooleanString() isActive?: string;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) page?: number;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(100) pageSize?: number;
+}
+
+class SetCommissionDto {
+  /** نسبة مئوية — بين ٠ و ٥٠٪. */
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @Max(50)
+  rate!: number;
+}
+
+class ToggleActiveDto {
+  @IsBoolean() isActive!: boolean;
 }
 
 @ApiTags('restaurants')
@@ -80,10 +113,65 @@ export class RestaurantsController {
   }
 }
 
+/**
+ * إدارة المطاعم من اللوحة — الأدمن كان بيعرف الفروع من الطلبات بس، ومافيش
+ * طريقة يقفل فرع أو يعدّل عمولة. تعديل العمولة بيتسجّل في التدقيق لأنه قرار
+ * مالي، وبيسري على الطلبات الجديدة بس (كل طلب بيخزّن عمولته وقت الإنشاء).
+ */
+@ApiTags('admin/restaurants')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.ADMIN)
+@Controller('admin')
+export class RestaurantsAdminController {
+  constructor(private readonly service: RestaurantsService) {}
+
+  @Get('restaurants')
+  @ApiOperation({ summary: 'قائمة المطاعم بفروعها وعمولتها وحجم تشغيلها' })
+  list(@Query() query: AdminListRestaurantsDto) {
+    return this.service.adminListRestaurants({
+      q: query.q,
+      isActive: query.isActive === undefined ? undefined : query.isActive === 'true',
+      page: query.page,
+      pageSize: query.pageSize,
+    });
+  }
+
+  @Patch('restaurants/:id/commission')
+  @ApiOperation({ summary: 'تعديل نسبة عمولة المنصة (على الطلبات الجديدة فقط)' })
+  commission(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SetCommissionDto,
+  ) {
+    return this.service.adminSetCommission(id, dto.rate, user.userId);
+  }
+
+  @Patch('restaurants/:id/active')
+  @ApiOperation({ summary: 'تفعيل/إيقاف مطعم — الإيقاف بيقفل كل فروعه' })
+  toggle(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ToggleActiveDto,
+  ) {
+    return this.service.adminSetRestaurantActive(id, dto.isActive, user.userId);
+  }
+
+  @Patch('branches/:id/status')
+  @ApiOperation({ summary: 'فتح/إغلاق/مشغول لفرع من اللوحة' })
+  branchStatus(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SetStatusDto,
+  ) {
+    return this.service.adminSetBranchStatus(id, dto.status, user.userId, dto.busyExtraMinutes);
+  }
+}
+
 @Module({
   imports: [forwardRef(() => TrackingModule)],
   providers: [RestaurantsService],
-  controllers: [RestaurantsController],
+  controllers: [RestaurantsController, RestaurantsAdminController],
   exports: [RestaurantsService],
 })
 export class RestaurantsModule {}

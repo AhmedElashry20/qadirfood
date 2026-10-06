@@ -99,7 +99,7 @@ class MyTripsScreen extends ConsumerWidget {
             children: [
               const SizedBox(height: 80),
               QErrorView(
-                message: error is ApiException ? error.message : 'مش قادرين نجيب السجل',
+                message: error is ApiException ? error.message : 'تعذّر تحميل السجل',
                 onRetry: () => ref.invalidate(_historyProvider(range)),
               ),
             ],
@@ -112,7 +112,7 @@ class MyTripsScreen extends ConsumerWidget {
               if (page.trips.isEmpty)
                 const Padding(
                   padding: EdgeInsets.only(top: 40),
-                  child: QEmpty(message: 'مافيش طلبات في الفترة دي'),
+                  child: QEmpty(message: 'لا توجد طلبات في هذه الفترة'),
                 )
               else
                 for (final trip in page.trips) ...[
@@ -140,7 +140,7 @@ class _SummaryCard extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
-        color: QColors.ink,
+        color: QColors.inkSurface,
         borderRadius: BorderRadius.circular(QRadius.lg),
       ),
       child: Row(
@@ -160,7 +160,7 @@ class _SummaryCard extends ConsumerWidget {
                       const TextSpan(text: ' طلب'),
                     ],
                   ),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Cairo',
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
@@ -175,7 +175,7 @@ class _SummaryCard extends ConsumerWidget {
                         text: fmt.money(summary?.rangeTotal ?? 0),
                         style: QText.num(size: 22, weight: FontWeight.w800, color: QColors.brand),
                       ),
-                      const TextSpan(
+                      TextSpan(
                         text: ' ر.س',
                         style: TextStyle(
                           fontFamily: 'Cairo',

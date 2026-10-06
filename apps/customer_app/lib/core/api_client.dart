@@ -8,7 +8,7 @@ import 'env.dart';
 
 /// خطأ من السيرفر برسالته العربية — الشاشات بتعرض `message` مباشرة.
 class ApiException implements Exception {
-  ApiException(this.message, {this.statusCode});
+  const ApiException(this.message, {this.statusCode});
 
   final String message;
   final int? statusCode;
@@ -18,7 +18,7 @@ class ApiException implements Exception {
 }
 
 class TokenStore {
-  TokenStore(this._prefs);
+  const TokenStore(this._prefs);
 
   static const _access = 'access_token';
   static const _refresh = 'refresh_token';
@@ -131,13 +131,21 @@ class ApiClient {
         switch (message) {
           final String m => m,
           final List<dynamic> list when list.isNotEmpty => list.first.toString(),
+          // مافيش رسالة JSON من السيرفر — نفرّق بين أنواع الفشل بدل رسالة عامة.
+          //
+          // الحالة ٥xx بلا رسالة معناها إن الرد **مش من الـ API**: الـ API
+          // بيرجّع دايماً `{ message }` عربية حتى في أخطاء ٥٠٠ (عبر
+          // HttpExceptionFilter). فغيابها معناه بروكسي ردّ بدل خادم مقفول —
+          // وده كان بيظهر للمستخدم كـ «خطأ غير متوقع» ويخفي السبب.
           _ => switch (e.type) {
               DioExceptionType.connectionTimeout ||
               DioExceptionType.receiveTimeout ||
               DioExceptionType.sendTimeout =>
-                'الاتصال بطيء — جرّب تاني',
-              DioExceptionType.connectionError => 'مافيش اتصال بالسيرفر',
-              _ => 'حصل خطأ غير متوقع',
+                'الاتصال بطيء — حاول مرة أخرى',
+              DioExceptionType.connectionError => 'تعذّر الاتصال بالخادم',
+              _ when (e.response?.statusCode ?? 0) >= 500 =>
+                'الخادم غير متاح حالياً — حاول بعد قليل',
+              _ => 'حدث خطأ غير متوقع',
             },
         },
         statusCode: e.response?.statusCode,

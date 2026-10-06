@@ -69,7 +69,7 @@ interface LiveCaptain {
 // إعدادات التوزيع الآلي — القيم الافتراضية في السيرفر
 // apps/api/src/dispatch/dispatch.service.ts:
 //   CAPTAIN_SEARCH_RADIUS_KM ?? 7   ·   TRIP_OFFER_TIMEOUT_SECONDS ?? 30
-// مافيش endpoint بيقرا ولا بيكتب الإعدادات دي، فهي معروضة كنص ثابت.
+// لا يوجد endpoint بيقرا ولا بيكتب الإعدادات دي، فهي معروضة كنص ثابت.
 // ────────────────────────────────────────────────────────────
 
 const SEARCH_RADIUS_KM = 7;
@@ -221,8 +221,8 @@ export default function Dispatch() {
                 ) : queue.length === 0 ? (
                   <EmptyState
                     icon="✅"
-                    title="مافيش طلبات مستنية إسناد"
-                    description="كل الطلبات المقبولة من المطاعم عندها كابتن دلوقتي."
+                    title="لا توجد طلبات تنتظر الإسناد"
+                    description="جميع الطلبات المقبولة من المطاعم لديها كابتن الآن."
                   />
                 ) : (
                   queue.map((order) => (
@@ -260,7 +260,7 @@ export default function Dispatch() {
                 {nearest.length === 0 ? (
                   <EmptyState
                     icon="🛵"
-                    title="مافيش endpoint يرجّع قائمة الكباتن"
+                    title="لا يوجد endpoint يُرجع قائمة الكباتن"
                     description={
                       <>
                         <span className="block">

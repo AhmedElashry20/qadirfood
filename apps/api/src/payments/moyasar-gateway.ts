@@ -45,7 +45,7 @@ export class MoyasarGateway extends PaymentGateway {
   private secretKey(): string {
     const key = this.config.get<string>('MOYASAR_SECRET_KEY');
     if (!key) {
-      throw new Error('MOYASAR_SECRET_KEY مش متظبّط — مايصحّش نحصّل بميسّر من غير مفتاح');
+      throw new Error('MOYASAR_SECRET_KEY غير مضبوط — لا يصحّ التحصيل عبر ميسّر بدون مفتاح');
     }
     return key;
   }

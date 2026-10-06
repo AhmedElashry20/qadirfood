@@ -97,7 +97,7 @@ class _PaymentWebViewScreenState extends ConsumerState<PaymentWebViewScreen> {
       child: Scaffold(
         backgroundColor: QColors.canvas,
         appBar: AppBar(
-          backgroundColor: QColors.ink,
+          backgroundColor: QColors.inkSurface,
           title: const Text(
             'الدفع الآمن',
             style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800, color: Colors.white),
@@ -117,11 +117,11 @@ class _PaymentWebViewScreenState extends ConsumerState<PaymentWebViewScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const CircularProgressIndicator(color: QColors.brand),
+                      CircularProgressIndicator(color: QColors.brand),
                       const SizedBox(height: 16),
                       Text(
                         _verifying ? 'جاري تأكيد الدفع…' : 'جاري تحميل صفحة الدفع…',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Cairo',
                           fontWeight: FontWeight.w700,
                           color: QColors.ink,
@@ -143,7 +143,7 @@ class _PaymentWebViewScreenState extends ConsumerState<PaymentWebViewScreen> {
       builder: (dialogContext) => AlertDialog(
         title: const Text('إلغاء الدفع؟', style: TextStyle(fontFamily: 'Cairo')),
         content: const Text(
-          'الطلب اتسجّل بس لسه مادفعتش، وهيفضل بانتظار الدفع. تقدر تدفع دلوقتي، '
+          'سُجِّل الطلب لكنه لم يُدفَع بعد، وسيظل بانتظار الدفع. يمكنك الدفع الآن، '
           'أو تطلب من جديد لو خرجت.',
           style: TextStyle(fontFamily: 'Cairo'),
         ),
@@ -157,7 +157,7 @@ class _PaymentWebViewScreenState extends ConsumerState<PaymentWebViewScreen> {
               Navigator.of(dialogContext).pop();
               Navigator.of(context).pop(null);
             },
-            child: const Text('إلغاء', style: TextStyle(fontFamily: 'Cairo', color: QColors.danger)),
+            child: Text('إلغاء', style: TextStyle(fontFamily: 'Cairo', color: QColors.danger)),
           ),
         ],
       ),

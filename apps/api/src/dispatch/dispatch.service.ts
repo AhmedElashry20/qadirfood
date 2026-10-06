@@ -1,4 +1,13 @@
-import { Injectable, Logger, forwardRef, Inject, type OnModuleInit } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Inject,
+  Injectable,
+  Logger,
+  NotFoundException,
+  forwardRef,
+  type OnModuleInit,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   CaptainStatus,
@@ -9,6 +18,7 @@ import {
   OrderStatus,
   TgaStatus,
   TripOfferStatus,
+  UserRole,
   type Prisma,
 } from '@prisma/client';
 import Decimal from 'decimal.js';
@@ -16,10 +26,25 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { TrackingGateway } from '../tracking/tracking.gateway';
 import { ZonesService } from '../zones/zones.service';
+import { SettingsService } from '../settings/settings.module';
+import { RoutingService } from '../routing/routing.service';
 import { payoutForDistance, MIN_CAPTAIN_PAYOUT } from './captain-payout';
 
 /** المتوسط المفترض لسرعة الكابتن في المدينة — لتقدير وقت وصوله للمطعم. */
 const AVG_CITY_SPEED_KMH = 25;
+
+/**
+ * إعدادات التوزيع اللي الأدمن يقدر يغيّرها من اللوحة.
+ *
+ * الكتالوج ده هو الحد — أي مفتاح برّاه مابيتكتبش، عشان `PATCH` واحد مايبقاش
+ * باب لكتابة أي إعداد في النظام.
+ */
+const DISPATCH_CONFIG = [
+  { key: 'CAPTAIN_SEARCH_RADIUS_KM', label: 'نصف قطر البحث عن كابتن (كم)', kind: 'number', fallback: 7 },
+  { key: 'TRIP_OFFER_TIMEOUT_SECONDS', label: 'مهلة رد الكابتن على العرض (ثانية)', kind: 'number', fallback: 30 },
+  { key: 'TGA_ENFORCE', label: 'إلزام بطاقة هيئة النقل', kind: 'flag', fallback: 0 },
+  { key: 'FACE_CHECK_ENFORCE', label: 'إلزام التحقق اليومي بالوجه', kind: 'flag', fallback: 0 },
+] as const;
 
 @Injectable()
 export class DispatchService implements OnModuleInit {
@@ -53,7 +78,26 @@ export class DispatchService implements OnModuleInit {
     @Inject(forwardRef(() => TrackingGateway))
     private readonly gateway: TrackingGateway,
     private readonly zones: ZonesService,
+    private readonly settings: SettingsService,
+    private readonly routing: RoutingService,
   ) {}
+
+  /**
+   * إعداد رقمي فعّال — إعداد اللوحة الأول وإلا متغيّر البيئة وإلا الافتراضي.
+   * لازم يمرّ على `SettingsService` مش `ConfigService` على طول، وإلا الأدمن
+   * يغيّر نصف قطر البحث من اللوحة والتوزيع يفضل شغّال بالقيمة القديمة.
+   */
+  private async num(key: string, fallback: number): Promise<number> {
+    const raw = await this.settings.get(key);
+    const n = Number(raw);
+    return Number.isFinite(n) && raw !== undefined && raw !== '' ? n : fallback;
+  }
+
+  /** علم تشغيل/إيقاف فعّال (1/true) — بنفس أسبقية `num`. */
+  private async flag(key: string): Promise<boolean> {
+    const v = String((await this.settings.get(key)) ?? '').toLowerCase();
+    return v === '1' || v === 'true';
+  }
 
   /**
    * جدولة البحث عن كابتن.
@@ -64,8 +108,8 @@ export class DispatchService implements OnModuleInit {
    *
    * وقت بدء البحث = وقت الجاهزية − (متوسط وصول الكابتن + هامش المهلة)
    */
-  scheduleDispatch(orderId: string, prepMinutes: number) {
-    const offerTimeout = Number(this.config.get('TRIP_OFFER_TIMEOUT_SECONDS') ?? 30);
+  async scheduleDispatch(orderId: string, prepMinutes: number) {
+    const offerTimeout = await this.num('TRIP_OFFER_TIMEOUT_SECONDS', 30);
     // هامش: مهلتين قبول (لو أول كابتن رفض) + ٥ دقايق متوسط وصول للمطعم
     const bufferMinutes = 5 + (offerTimeout * 2) / 60;
     const delayMinutes = Math.max(0, prepMinutes - bufferMinutes);
@@ -122,11 +166,11 @@ export class DispatchService implements OnModuleInit {
 
     const branchPoint = await this.prisma.getPoint('branches', 'location', order.branchId);
     if (!branchPoint) {
-      this.logger.error(`الفرع ${order.branchId} ملوش موقع — مش هينفع نسند كابتن`);
+      this.logger.error(`الفرع ${order.branchId} ملوش موقع — لا يمكن إسناد كابتن`);
       return;
     }
 
-    const radiusKm = Number(this.config.get('CAPTAIN_SEARCH_RADIUS_KM') ?? 7);
+    const radiusKm = await this.num('CAPTAIN_SEARCH_RADIUS_KM', 7);
     const nearby = await this.redisNearby(branchPoint.lat, branchPoint.lng, radiusKm);
 
     const declinedSet = this.declined.get(orderId) ?? new Set<string>();
@@ -138,46 +182,9 @@ export class DispatchService implements OnModuleInit {
     const orderZoneId = orderZone?.id ?? null;
 
     // فلترة: متاح فعلاً في الداتابيز + موثّق + مش رافض الطلب ده قبل كده.
-    // `isVerified` وحدها مش كفاية — لو وثيقة إلزامية انتهى تاريخها والعلم لسه
-    // متسّجل true (مثلاً الكابتن ما فتحش التطبيق من ساعتها)، لازم نستبعده هنا
-    // كمان. اشتراط هيئة النقل: ممنوع التوزيع على كابتن وثائقه منتهية.
     const candidateIds = nearby.map((c) => c.captainId).filter((id) => !declinedSet.has(id));
     const available = await this.prisma.captain.findMany({
-      where: {
-        id: { in: candidateIds },
-        status: CaptainStatus.ONLINE,
-        isVerified: true,
-        // مناديب المشي (داخل الحرم) مابياخدوش توزيع المركبات العادي — بيستلموا
-        // عبر مسار التسليم بالتناوب (relay).
-        isFootCourier: false,
-        // قفل المنطقة + شركة موقوفة — الاتنين شروط OR فبنجمّعهم تحت AND عشان
-        // مايكتبوش فوق بعض. الكابتن المسند لمنطقة بياخد طلبات منطقته بس.
-        AND: [
-          { OR: [{ companyId: null }, { company: { status: CompanyStatus.ACTIVE } }] },
-          {
-            OR: [
-              { assignedZoneId: null },
-              ...(orderZoneId ? [{ assignedZoneId: orderZoneId }] : []),
-            ],
-          },
-        ],
-        documents: {
-          none: {
-            type: { in: [DocumentType.IDENTITY, DocumentType.LICENSE, DocumentType.VEHICLE_REG, DocumentType.INSURANCE] },
-            OR: [
-              { status: { in: [DocumentStatus.EXPIRED, DocumentStatus.REJECTED, DocumentStatus.PENDING] } },
-              { status: DocumentStatus.APPROVED, expiresAt: { lt: new Date() } },
-            ],
-          },
-        },
-        // اشتراط هيئة النقل: بطاقة توصيل موثّقة وسارية. متحكوم بـ `TGA_ENFORCE`
-        // عشان ما يكسرش بيئة موجودة قبل ما البطاقات تتظبّط — والبطاقات المزروعة
-        // للفريق الأونلاين موثّقة أصلاً فالتفعيل مايأثّرش عليهم.
-        ...this.tgaFilter(),
-        // اشتراط التحقق اليومي بالوجه — لازم فحص موثّق النهاردة. متحكوم بـ
-        // `FACE_CHECK_ENFORCE`.
-        ...this.faceFilter(),
-      },
+      where: { id: { in: candidateIds }, ...(await this.eligibilityWhere(orderZoneId)) },
       include: { user: true },
     });
 
@@ -195,10 +202,12 @@ export class DispatchService implements OnModuleInit {
 
     const dropoff = await this.prisma.getPoint('addresses', 'location', order.addressId);
     const next = ordered[0];
-    const offerTimeout = Number(this.config.get('TRIP_OFFER_TIMEOUT_SECONDS') ?? 30);
+    const offerTimeout = await this.num('TRIP_OFFER_TIMEOUT_SECONDS', 30);
 
+    // مسافة طريق لما يكون فيه مزوّد مسارات، وإلا تقدير هوائي × معامل التفاف.
+    // الرقم ده بيحدّد مستحق الكابتن، فالخط المستقيم كان بيبخس كل رحلة.
     const distanceKm = dropoff
-      ? await this.prisma.distanceKm(branchPoint.lat, branchPoint.lng, dropoff.lat, dropoff.lng)
+      ? await this.routing.distanceKm(branchPoint, dropoff)
       : 0;
 
     const payout = this.payoutFor(distanceKm);
@@ -262,58 +271,355 @@ export class DispatchService implements OnModuleInit {
 
     await this.recordOfferOutcome(orderId, captainId, TripOfferStatus.ACCEPTED);
 
-    const offerTimeout = Number(this.config.get('TRIP_OFFER_TIMEOUT_SECONDS') ?? 30);
+    // `actorId` في أحداث الطلب = معرّف **المستخدم**، مش معرّف الكابتن. كان
+    // بيتكتب `captainId` هنا، فالتايم لاين مايقدرش يحلّ اسم الفاعل.
+    const captain = await this.prisma.captain.findUnique({
+      where: { id: captainId },
+      select: { userId: true },
+    });
+    return this.assignCaptain(orderId, captainId, UserRole.CAPTAIN, captain?.userId);
+  }
+
+  /**
+   * إسناد الطلب لكابتن — **المسار الوحيد** للإسناد، سواء الكابتن قبل عرض أو
+   * الأدمن أسند يدوي من اللوحة. أي مسار تاني بيفوت القفل الذري ويقدر يسند
+   * نفس الطلب لكابتنين.
+   *
+   * بيرجّع `false` لو الطلب اتسند بالفعل أو مابقاش قابل للإسناد.
+   */
+  private async assignCaptain(
+    orderId: string,
+    captainId: string,
+    actorRole: UserRole,
+    actorId?: string,
+  ): Promise<boolean> {
+    const offerTimeout = await this.num('TRIP_OFFER_TIMEOUT_SECONDS', 30);
     // قفل ذري — يمنع إن ردّين متزامنين ياخدوا نفس الطلب
     const locked = await this.redis.acquireOfferLock(orderId, captainId, offerTimeout + 10);
     if (!locked) return false;
 
-    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
-    // لازم الطلب يكون لسه **قابل للإسناد**: موجود، بدون كابتن، وفي حالة حيّة
-    // (اتقبل/بيتحضّر/جاهز). من غير الشرط ده، كابتن بيقبل عرض لطلب **اتلغى**
-    // للتو بيتسند لطلب ميت ويفضل ON_TRIP للأبد.
-    const assignable: OrderStatus[] = [
-      OrderStatus.ACCEPTED,
-      OrderStatus.PREPARING,
-      OrderStatus.READY,
-    ];
-    if (!order || order.captainId || !assignable.includes(order.status)) {
-      await this.redis.releaseOfferLock(orderId);
-      return false;
-    }
+    try {
+      const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+      // لازم الطلب يكون لسه **قابل للإسناد**: موجود، بدون كابتن، وفي حالة حيّة
+      // (اتقبل/بيتحضّر/جاهز). من غير الشرط ده، كابتن بيقبل عرض لطلب **اتلغى**
+      // للتو بيتسند لطلب ميت ويفضل ON_TRIP للأبد.
+      const assignable: OrderStatus[] = [
+        OrderStatus.ACCEPTED,
+        OrderStatus.PREPARING,
+        OrderStatus.READY,
+      ];
+      if (!order || order.captainId || !assignable.includes(order.status)) return false;
 
-    await this.prisma.$transaction([
-      this.prisma.order.update({
+      await this.prisma.$transaction([
+        this.prisma.order.update({
+          where: { id: orderId },
+          data: { captainId, assignedAt: new Date() },
+        }),
+        this.prisma.captain.update({
+          where: { id: captainId },
+          data: { status: CaptainStatus.ON_TRIP },
+        }),
+      ]);
+
+      const full = await this.prisma.order.findUnique({
         where: { id: orderId },
-        data: { captainId, assignedAt: new Date() },
-      }),
-      this.prisma.captain.update({
-        where: { id: captainId },
-        data: { status: CaptainStatus.ON_TRIP },
-      }),
-    ]);
+        include: { captain: { include: { user: true } }, branch: true },
+      });
 
-    const full = await this.prisma.order.findUnique({
-      where: { id: orderId },
-      include: { captain: { include: { user: true } }, branch: true },
+      // بلّغ المطعم إن في كابتن جاي (شاشة ٤ — بيانات الكابتن المسند)
+      this.gateway.emitCaptainAssigned(full!);
+
+      // لو الطلب كان جاهز خلاص، الحالة تتنقل فوراً لـ "في انتظار الكابتن"
+      if (order.status === OrderStatus.READY) {
+        await this.prisma.order.update({
+          where: { id: orderId },
+          data: { status: OrderStatus.CAPTAIN_ASSIGNED },
+        });
+        await this.prisma.orderEvent.create({
+          data: { orderId, status: OrderStatus.CAPTAIN_ASSIGNED, actorId, actorRole },
+        });
+        this.gateway.emitOrderReady(captainId, full!);
+      }
+
+      return true;
+    } finally {
+      // كان بيتحرّر في ٣ مسارات منفصلة — أي `return` جديد جوه الدالة كان
+      // هيسيب القفل متمسك لحد ما TTL يخلص. `finally` بتقفلها نهائي.
+      await this.redis.releaseOfferLock(orderId);
+    }
+  }
+
+  // ────────────────────────── واجهة الأدمن ──────────────────────────
+  // `DispatchService` كان شغّال في السيرفر من غير أي واجهة تتحكم فيه: مافيش
+  // طريقة تشوف طلب معلّق بلا كابتن، ولا تسند واحد يدوي، ولا تعرف مين رفض.
+  // الدوال دي بتفتح الصندوق الأسود للوحة.
+
+  /** حالات الطلب اللي لسه مستنية كابتن. */
+  private static readonly AWAITING: OrderStatus[] = [
+    OrderStatus.ACCEPTED,
+    OrderStatus.PREPARING,
+    OrderStatus.READY,
+  ];
+
+  /**
+   * طابور التوزيع — كل طلب مقبول ومستني كابتن، ومعاه سبب الانتظار.
+   *
+   * `pendingTimer` بيفرّق بين «البحث متجدول ولسه ماجاش وقته» و«البحث دار
+   * وماحدش قبل» — الاتنين شكلهم واحد في الداتابيز، والفرق بينهم هو الفرق بين
+   * «طبيعي» و«محتاج تدخل».
+   */
+  async adminQueue() {
+    const orders = await this.prisma.order.findMany({
+      where: { captainId: null, status: { in: DispatchService.AWAITING } },
+      include: {
+        branch: { select: { id: true, nameAr: true } },
+        address: { select: { district: true, city: true } },
+        tripOffers: {
+          orderBy: { offeredAt: 'desc' },
+          include: { captain: { include: { user: { select: { fullName: true } } } } },
+        },
+      },
+      orderBy: { acceptedAt: 'asc' },
     });
 
-    // بلّغ المطعم إن في كابتن جاي (شاشة ٤ — بيانات الكابتن المسند)
-    this.gateway.emitCaptainAssigned(full!);
+    const now = Date.now();
+    return orders.map((o) => {
+      const since = o.readyAt ?? o.acceptedAt ?? o.placedAt;
+      return {
+        id: o.id,
+        orderNumber: o.orderNumber,
+        status: o.status,
+        branch: o.branch,
+        district: o.address.district ?? o.address.city,
+        acceptedAt: o.acceptedAt,
+        readyAt: o.readyAt,
+        waitingSeconds: Math.max(0, Math.floor((now - since.getTime()) / 1000)),
+        pendingTimer: this.timers.has(o.id),
+        declinedCount: (this.declined.get(o.id) ?? new Set()).size,
+        offers: o.tripOffers.map((t) => ({
+          captainId: t.captainId,
+          captainName: t.captain.user.fullName,
+          status: t.status,
+          offeredAt: t.offeredAt,
+          respondedAt: t.respondedAt,
+          payout: Number(t.payout),
+        })),
+      };
+    });
+  }
 
-    // لو الطلب كان جاهز خلاص، الحالة تتنقل فوراً لـ "في انتظار الكابتن"
-    if (order.status === OrderStatus.READY) {
-      await this.prisma.order.update({
-        where: { id: orderId },
-        data: { status: OrderStatus.CAPTAIN_ASSIGNED },
-      });
-      await this.prisma.orderEvent.create({
-        data: { orderId, status: OrderStatus.CAPTAIN_ASSIGNED, actorId: captainId, actorRole: 'CAPTAIN' },
-      });
-      this.gateway.emitOrderReady(captainId, full!);
+  /** سجل العروض على طلب — مين اتعرض عليه وإيه كان رده. */
+  async offersFor(orderId: string) {
+    const offers = await this.prisma.tripOffer.findMany({
+      where: { orderId },
+      orderBy: { offeredAt: 'asc' },
+      include: { captain: { include: { user: { select: { fullName: true, phone: true } } } } },
+    });
+    return offers.map((t) => ({
+      captainId: t.captainId,
+      captainName: t.captain.user.fullName,
+      captainPhone: t.captain.user.phone,
+      status: t.status,
+      offeredAt: t.offeredAt,
+      respondedAt: t.respondedAt,
+      payout: Number(t.payout),
+      distanceKm: Number(t.distanceKm),
+    }));
+  }
+
+  /**
+   * الكباتن المؤهّلين لطلب — بنفس شروط التوزيع الآلي بالظبط، عشان الأدمن
+   * مايختارش من قائمة فيها حد التوزيع نفسه كان هيستبعده.
+   *
+   * مش محدود بنصف قطر البحث: الأدمن بيسند يدوي وقت ما الآلي فشل، فتضييق
+   * القائمة لنفس الدايرة اللي فشلت مافيهوش فايدة.
+   */
+  async eligibleCaptainsFor(orderId: string) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) throw new NotFoundException('الطلب غير موجود');
+
+    const dropPoint = await this.prisma.getPoint('addresses', 'location', order.addressId);
+    const zone = dropPoint ? await this.zones.zoneForPoint(dropPoint.lat, dropPoint.lng) : null;
+
+    const captains = await this.prisma.captain.findMany({
+      where: await this.eligibilityWhere(zone?.id ?? null),
+      include: { user: { select: { fullName: true, phone: true } } },
+    });
+
+    const declinedSet = this.declined.get(orderId) ?? new Set<string>();
+    return captains.map((c) => ({
+      id: c.id,
+      name: c.user.fullName,
+      phone: c.user.phone,
+      vehicleType: c.vehicleType,
+      /** رفض الطلب ده (أو عدّت مهلته) — الأدمن يشوفها قبل ما يسنده تاني. */
+      declinedThisOrder: declinedSet.has(c.id),
+    }));
+  }
+
+  /**
+   * إسناد يدوي من الأدمن — بيمرّ على نفس قفل `assignCaptain` ونفس شروط
+   * الأهلية. بنلغي أي عرض معلّق الأول وبنبلّغ الكابتن اللي كان معروض عليه إن
+   * العرض اتسحب، وإلا يفضل شايف عرض لطلب اتسند لغيره.
+   */
+  async adminAssign(orderId: string, captainId: string, adminUserId: string) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) throw new NotFoundException('الطلب غير موجود');
+    if (order.captainId) throw new ConflictException('الطلب مُسنَد لكابتن بالفعل');
+    if (!DispatchService.AWAITING.includes(order.status)) {
+      throw new ConflictException(`لا يمكن إسناد طلب في حالة ${order.status}`);
     }
 
-    await this.redis.releaseOfferLock(orderId);
-    return true;
+    const dropPoint = await this.prisma.getPoint('addresses', 'location', order.addressId);
+    const zone = dropPoint ? await this.zones.zoneForPoint(dropPoint.lat, dropPoint.lng) : null;
+    const eligible = await this.prisma.captain.findFirst({
+      where: { id: captainId, ...(await this.eligibilityWhere(zone?.id ?? null)) },
+      select: { id: true },
+    });
+    if (!eligible) {
+      throw new ConflictException(
+        'الكابتن غير مؤهّل لهذا الطلب — راجع حالته ووثائقه ومنطقة عمله. اشتراطات الالتزام لا تُتجاوز.',
+      );
+    }
+
+    // اسحب العروض المعلّقة قبل الإسناد
+    this.cancelDispatch(orderId);
+    const pending = await this.prisma.tripOffer.findMany({
+      where: { orderId, status: TripOfferStatus.OFFERED },
+      select: { captainId: true },
+    });
+    for (const o of pending) {
+      if (o.captainId === captainId) continue;
+      await this.recordOfferOutcome(orderId, o.captainId, TripOfferStatus.TIMEOUT);
+      this.gateway.emitTripOfferExpired(o.captainId, orderId);
+    }
+
+    const ok = await this.assignCaptain(orderId, captainId, UserRole.ADMIN, adminUserId);
+    if (!ok) throw new ConflictException('فشل الإسناد — أُسنِد الطلب لكابتن آخر في اللحظة نفسها');
+
+    await this.prisma.orderEvent.create({
+      data: {
+        orderId,
+        status: order.status,
+        actorId: adminUserId,
+        actorRole: UserRole.ADMIN,
+        note: 'إسناد يدوي من لوحة التحكم',
+      },
+    });
+
+    this.logger.log(`إسناد يدوي: الطلب ${order.orderNumber} للكابتن ${captainId} بواسطة ${adminUserId}`);
+    return { assigned: true };
+  }
+
+  /**
+   * إعادة تشغيل البحث فوراً — للطلب اللي التوزيع الآلي وقف عنده. بنصفّي قائمة
+   * الرفض عشان الكباتن اللي عدّت مهلتهم يتعرض عليهم تاني (ممكن يكونوا بقوا
+   * فاضيين)، وإلا إعادة المحاولة هتلف على نفس القائمة الفاضية.
+   */
+  async adminRedispatch(orderId: string) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) throw new NotFoundException('الطلب غير موجود');
+    if (order.captainId) throw new ConflictException('الطلب مُسنَد لكابتن بالفعل');
+    if (!DispatchService.AWAITING.includes(order.status)) {
+      throw new ConflictException(`لا يمكن توزيع طلب في حالة ${order.status}`);
+    }
+
+    this.cancelDispatch(orderId);
+    this.declined.delete(orderId);
+    this.bgDispatch(orderId);
+    return { dispatching: true };
+  }
+
+  /** إعدادات التوزيع الفعّالة + مصدر كل قيمة (لوحة / بيئة / افتراضي). */
+  async dispatchConfig() {
+    const out = [];
+    for (const def of DISPATCH_CONFIG) {
+      const row = await this.prisma.setting.findUnique({ where: { key: def.key } });
+      const fromDb = row?.value != null && row.value !== '';
+      const env = this.config.get<string>(def.key);
+      out.push({
+        key: def.key,
+        label: def.label,
+        kind: def.kind,
+        value: fromDb ? row!.value : (env ?? String(def.fallback)),
+        source: fromDb ? 'panel' : env != null && env !== '' ? 'env' : 'default',
+        fallback: String(def.fallback),
+      });
+    }
+    return out;
+  }
+
+  /** حفظ إعدادات التوزيع. قيمة فاضية = امسح الإعداد وارجع لمتغيّر البيئة. */
+  async saveDispatchConfig(items: { key: string; value?: string }[]) {
+    const allowed = new Map<string, (typeof DISPATCH_CONFIG)[number]>(
+      DISPATCH_CONFIG.map((d) => [d.key, d]),
+    );
+    for (const it of items) {
+      const def = allowed.get(it.key);
+      if (!def) continue; // مفاتيح الكتالوج بس
+      if (it.value == null || it.value === '') {
+        await this.prisma.setting.deleteMany({ where: { key: it.key } });
+        continue;
+      }
+      if (def.kind === 'number' && !Number.isFinite(Number(it.value))) {
+        throw new BadRequestException(`${def.label}: لازم يكون رقم`);
+      }
+      await this.prisma.setting.upsert({
+        where: { key: it.key },
+        create: { key: it.key, value: it.value },
+        update: { value: it.value },
+      });
+    }
+    return this.dispatchConfig();
+  }
+
+  /**
+   * شروط أهلية الكابتن لاستلام طلب — المرجع الوحيد للأهلية.
+   *
+   * `isVerified` وحدها مش كفاية: لو وثيقة إلزامية انتهى تاريخها والعلم لسه
+   * متسّجل true (الكابتن ما فتحش التطبيق من ساعتها)، لازم نستبعده هنا كمان.
+   * اشتراط هيئة النقل: ممنوع التوزيع على كابتن وثائقه منتهية.
+   *
+   * الإسناد اليدوي من اللوحة بيمرّ على نفس الشروط — الالتزام مش اختياري،
+   * فمافيش تجاوز للأدمن.
+   */
+  private async eligibilityWhere(orderZoneId: string | null): Promise<Prisma.CaptainWhereInput> {
+    return {
+      status: CaptainStatus.ONLINE,
+      isVerified: true,
+      // كابتن موقوف (`user.isActive = false`) لازم يختفي من التوزيع فوراً.
+      // من غير الشرط ده الإيقاف بيمنعه من الـ API بس ويفضل مؤهّل للعروض.
+      user: { isActive: true },
+      // مناديب المشي (داخل الحرم) مابياخدوش توزيع المركبات العادي — بيستلموا
+      // عبر مسار التسليم بالتناوب (relay).
+      isFootCourier: false,
+      // قفل المنطقة + شركة موقوفة — الاتنين شروط OR فبنجمّعهم تحت AND عشان
+      // مايكتبوش فوق بعض. الكابتن المسند لمنطقة بياخد طلبات منطقته بس.
+      AND: [
+        { OR: [{ companyId: null }, { company: { status: CompanyStatus.ACTIVE } }] },
+        {
+          OR: [
+            { assignedZoneId: null },
+            ...(orderZoneId ? [{ assignedZoneId: orderZoneId }] : []),
+          ],
+        },
+      ],
+      documents: {
+        none: {
+          type: { in: [DocumentType.IDENTITY, DocumentType.LICENSE, DocumentType.VEHICLE_REG, DocumentType.INSURANCE] },
+          OR: [
+            { status: { in: [DocumentStatus.EXPIRED, DocumentStatus.REJECTED, DocumentStatus.PENDING] } },
+            { status: DocumentStatus.APPROVED, expiresAt: { lt: new Date() } },
+          ],
+        },
+      },
+      // اشتراط هيئة النقل: بطاقة توصيل موثّقة وسارية. متحكوم بـ `TGA_ENFORCE`
+      // عشان ما يكسرش بيئة موجودة قبل ما البطاقات تتظبّط.
+      ...(await this.tgaFilter()),
+      // اشتراط التحقق اليومي بالوجه — لازم فحص موثّق النهاردة. متحكوم بـ
+      // `FACE_CHECK_ENFORCE`.
+      ...(await this.faceFilter()),
+    };
   }
 
   /**
@@ -321,9 +627,8 @@ export class DispatchService implements OnModuleInit {
    * `TGA_ENFORCE` (1/true). مطفي افتراضياً عشان بيئة موجودة قبل ما البطاقات
    * تتظبّط ماتقفش. لما يتفعّل، أي كابتن بطاقته مش VERIFIED أو منتهية بيتستبعد.
    */
-  private tgaFilter(): Prisma.CaptainWhereInput {
-    const enforce = String(this.config.get('TGA_ENFORCE') ?? '').toLowerCase();
-    if (enforce !== '1' && enforce !== 'true') return {};
+  private async tgaFilter(): Promise<Prisma.CaptainWhereInput> {
+    if (!(await this.flag('TGA_ENFORCE'))) return {};
     return {
       tgaStatus: TgaStatus.VERIFIED,
       tgaCardExpiresAt: { gte: new Date() },
@@ -334,9 +639,8 @@ export class DispatchService implements OnModuleInit {
    * شرط التحقق اليومي بالوجه على التوزيع — لازم المندوب يكون عنده فحص وجه
    * موثّق النهاردة. متحكوم بـ `FACE_CHECK_ENFORCE` (مطفي افتراضياً).
    */
-  private faceFilter(): Prisma.CaptainWhereInput {
-    const enforce = String(this.config.get('FACE_CHECK_ENFORCE') ?? '').toLowerCase();
-    if (enforce !== '1' && enforce !== 'true') return {};
+  private async faceFilter(): Promise<Prisma.CaptainWhereInput> {
+    if (!(await this.flag('FACE_CHECK_ENFORCE'))) return {};
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
     return {
@@ -357,7 +661,7 @@ export class DispatchService implements OnModuleInit {
     const dropoff = await this.prisma.getPoint('addresses', 'location', order.addressId);
     if (!branchPoint || !dropoff) return new Decimal(MIN_CAPTAIN_PAYOUT);
 
-    const km = await this.prisma.distanceKm(branchPoint.lat, branchPoint.lng, dropoff.lat, dropoff.lng);
+    const km = await this.routing.distanceKm(branchPoint, dropoff);
     return this.payoutFor(km);
   }
 

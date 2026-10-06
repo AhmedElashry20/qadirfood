@@ -24,7 +24,7 @@ class NotificationsScreen extends ConsumerWidget {
       backgroundColor: QColors.canvas,
       appBar: const QHeader(title: 'الإشعارات'),
       body: orders.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: QColors.brand)),
+        loading: () => Center(child: CircularProgressIndicator(color: QColors.brand)),
         error: (e, _) => _ErrorView(
           message: e is ApiException ? e.message : 'تعذّر تحميل الإشعارات',
           onRetry: () => ref.invalidate(ordersProvider),
@@ -53,7 +53,7 @@ class _NotificationsList extends StatelessWidget {
       return ListView(
         padding: const EdgeInsets.all(QSpace.screenH),
         children: const [
-          QEmpty(message: 'مافي إشعارات — أول ما تطلب هتلاقي تحديثات طلبك هنا', emoji: '🔔'),
+          QEmpty(message: 'لا توجد إشعارات — بمجرد أن تطلب ستجد تحديثات طلبك هنا', emoji: '🔔'),
           SizedBox(height: 14),
           _FirebaseNote(),
         ],
@@ -94,7 +94,7 @@ class _GroupLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         fontFamily: 'Cairo',
         fontSize: 12,
         fontWeight: FontWeight.w800,
@@ -158,7 +158,7 @@ class _OrderNotificationTile extends StatelessWidget {
                         'طلبك من ${order.restaurantName}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Cairo',
                           fontSize: 13.5,
                           fontWeight: FontWeight.w800,
@@ -191,7 +191,7 @@ class _OrderNotificationTile extends StatelessWidget {
                     width: 9,
                     height: 9,
                     margin: const EdgeInsets.only(top: 4),
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       color: QColors.danger,
                       shape: BoxShape.circle,
                     ),
@@ -212,8 +212,8 @@ class _FirebaseNote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Text(
-      'الإشعارات الفورية هتشتغل مع ربط Firebase',
+    return Text(
+      'ستعمل الإشعارات الفورية عند ربط Firebase',
       textAlign: TextAlign.center,
       style: TextStyle(
         fontFamily: 'Cairo',

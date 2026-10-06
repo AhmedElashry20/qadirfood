@@ -101,7 +101,7 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         fontFamily: 'Cairo',
         fontSize: 14.5,
         fontWeight: FontWeight.w800,
@@ -120,8 +120,8 @@ class _MyTicketsSection extends ConsumerWidget {
     final tickets = ref.watch(myTicketsProvider);
 
     return tickets.when(
-      loading: () => const Padding(
-        padding: EdgeInsets.symmetric(vertical: 18),
+      loading: () => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 18),
         child: Center(child: CircularProgressIndicator(color: QColors.brand)),
       ),
       error: (e, _) => _InlineError(
@@ -130,7 +130,7 @@ class _MyTicketsSection extends ConsumerWidget {
       ),
       data: (list) {
         if (list.isEmpty) {
-          return const QEmpty(message: 'مافيش تذاكر — افتح تذكرة لو محتاج مساعدة', emoji: '🎫');
+          return const QEmpty(message: 'لا توجد تذاكر — افتح تذكرة إن احتجت مساعدة', emoji: '🎫');
         }
         return QTileGroup(
           children: [for (final ticket in list) _TicketTile(ticket: ticket)],
@@ -162,7 +162,7 @@ class _TicketTile extends StatelessWidget {
                     ticket.subject,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Cairo',
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
@@ -172,7 +172,7 @@ class _TicketTile extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text.rich(
                     TextSpan(
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Cairo',
                         fontSize: 11.5,
                         fontWeight: FontWeight.w600,
@@ -197,7 +197,7 @@ class _TicketTile extends StatelessWidget {
             const SizedBox(width: 10),
             TicketStatusPill(status: ticket.status),
             const SizedBox(width: 4),
-            const Icon(Icons.chevron_right, size: 20, color: QColors.hint),
+            Icon(Icons.chevron_right, size: 20, color: QColors.hint),
           ],
         ),
       ),
@@ -250,7 +250,7 @@ class _InlineError extends StatelessWidget {
             child: Text(message, style: QText.bodyMuted),
           ),
           const SizedBox(width: 8),
-          const Text(
+          Text(
             'إعادة المحاولة',
             style: TextStyle(
               fontFamily: 'Cairo',
@@ -274,7 +274,7 @@ class _LiveChatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: QColors.ink,
+        color: QColors.inkSurface,
         borderRadius: BorderRadius.circular(QRadius.xl),
       ),
       child: Row(
@@ -283,15 +283,15 @@ class _LiveChatCard extends StatelessWidget {
             width: 50,
             height: 50,
             alignment: Alignment.center,
-            decoration: const BoxDecoration(color: QColors.brand, shape: BoxShape.circle),
+            decoration: BoxDecoration(color: QColors.brand, shape: BoxShape.circle),
             child: const Text('💬', style: TextStyle(fontSize: 22)),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'تحدث معنا مباشرة',
                   style: TextStyle(
                     fontFamily: 'Cairo',
@@ -300,7 +300,7 @@ class _LiveChatCard extends StatelessWidget {
                     color: Colors.white,
                   ),
                 ),
-                SizedBox(height: 3),
+                const SizedBox(height: 3),
                 Text.rich(
                   TextSpan(
                     style: TextStyle(
@@ -309,7 +309,7 @@ class _LiveChatCard extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                       color: QColors.darkSub,
                     ),
-                    children: [
+                    children: const [
                       TextSpan(text: 'فريق الدعم متاح '),
                       TextSpan(
                         text: '24/7',
@@ -329,8 +329,8 @@ class _LiveChatCard extends StatelessWidget {
             child: InkWell(
               onTap: () => _snack(context, 'قريباً'),
               borderRadius: BorderRadius.circular(11),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 child: Text(
                   'ابدأ',
                   style: TextStyle(
@@ -382,7 +382,7 @@ class _ActiveOrderCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'مشكلة في طلبك الحالي؟',
                       style: TextStyle(
                         fontFamily: 'Cairo',
@@ -394,7 +394,7 @@ class _ActiveOrderCard extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text.rich(
                       TextSpan(
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Cairo',
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -419,7 +419,7 @@ class _ActiveOrderCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              const Icon(Icons.chevron_right, size: 20, color: QColors.gold),
+              Icon(Icons.chevron_right, size: 20, color: QColors.gold),
             ],
           ),
         ),
@@ -435,7 +435,7 @@ void _snack(BuildContext context, String message) {
       SnackBar(
         content: Text(message, style: QText.body.copyWith(color: QColors.brand)),
         behavior: SnackBarBehavior.floating,
-        backgroundColor: QColors.ink,
+        backgroundColor: QColors.inkSurface,
         duration: const Duration(seconds: 2),
       ),
     );

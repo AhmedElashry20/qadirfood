@@ -22,6 +22,7 @@ import '../features/orders/my_trips_screen.dart';
 import '../features/orders/trip_details_screen.dart';
 import '../features/settings/settings_screen.dart';
 import '../features/shift/shift_screen.dart';
+import '../features/trip/order_chat_screen.dart';
 import '../features/trip/delivery_confirm_screen.dart';
 import '../features/trip/pickup_screen.dart';
 import '../features/trip/rate_screen.dart';
@@ -67,6 +68,7 @@ abstract final class QRoutes {
 
   // ── السجل والأرباح والحساب ──
   static const trips = '/trips';
+  static const orderChat = '/trip/chat';
 
   /// تفاصيل رحلة من السجل.
   static String tripDetails(String id) => '/trips/$id';
@@ -98,6 +100,10 @@ GoRouter buildRouter({bool isLoggedIn = false}) => GoRouter(
 
         // ── الرئيسية ──
         GoRoute(path: QRoutes.home, builder: (_, __) => const HomeScreen()),
+        GoRoute(
+          path: QRoutes.orderChat,
+          builder: (_, state) => OrderChatScreen(orderId: state.extra as String? ?? ''),
+        ),
 
         // عرض الرحلة — بيتفتح فوق الرئيسية بخلفية شفافة (الخريطة بتفضل بانة تحته).
         GoRoute(

@@ -4,7 +4,7 @@ import { Type } from 'class-transformer';
 import { IsDateString, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class RunSettlementDto {
-  @ApiPropertyOptional({ description: 'نهاية الفترة — لو فاضي بياخد دلوقتي' })
+  @ApiPropertyOptional({ description: 'نهاية الفترة — إن كان فارغاً يأخذ الآن' })
   @IsOptional()
   @IsDateString({}, { message: 'تاريخ نهاية الفترة غير صحيح' })
   periodEnd?: string;

@@ -63,7 +63,7 @@ class _IncomingOrdersScreenState extends ConsumerState<IncomingOrdersScreen> {
       showQSnack(context, e.message);
     } catch (_) {
       if (!mounted) return;
-      showQSnack(context, 'حصل خطأ، حاول تاني');
+      showQSnack(context, 'حدث خطأ، حاول مرة أخرى');
     }
   }
 
@@ -183,13 +183,13 @@ class _IncomingOrdersScreenState extends ConsumerState<IncomingOrdersScreen> {
           loading: () => const QLoading(),
           error: (e, _) => QScrollableState(
             child: QErrorView(
-              message: e is ApiException ? e.message : 'حصل خطأ',
+              message: e is ApiException ? e.message : 'حدث خطأ',
               onRetry: () => ref.invalidate(incomingOrdersProvider),
             ),
           ),
           data: (orders) => orders.isEmpty
               ? const QScrollableState(
-                  child: QEmpty(message: 'مافيش طلبات جديدة دلوقتي', emoji: '✅'),
+                  child: QEmpty(message: 'لا توجد طلبات جديدة الآن', emoji: '✅'),
                 )
               : ListView.separated(
                   padding: const EdgeInsets.fromLTRB(
@@ -233,7 +233,7 @@ class _AlertBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
+          Text(
             '🔊 تنبيه صوتي · 🔔 ',
             style: TextStyle(
               fontFamily: 'Cairo',

@@ -47,7 +47,7 @@ class _OrderReadyScreenState extends ConsumerState<OrderReadyScreen> {
       body: async.when(
         loading: () => const QLoading(),
         error: (e, _) => QErrorView(
-          message: e is ApiException ? e.message : 'حصل خطأ',
+          message: e is ApiException ? e.message : 'حدث خطأ',
           onRetry: () => ref.invalidate(orderProvider(widget.orderId)),
         ),
         data: (order) => ListView(
@@ -97,7 +97,7 @@ class _PickupBlock extends StatelessWidget {
             width: 64,
             height: 64,
             alignment: Alignment.center,
-            decoration: const BoxDecoration(color: QColors.success, shape: BoxShape.circle),
+            decoration: BoxDecoration(color: QColors.success, shape: BoxShape.circle),
             child: const Icon(Icons.check, size: 28, color: Colors.white),
           ),
           const SizedBox(height: 12),
@@ -161,7 +161,7 @@ class _CaptainCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(QRadius.lg),
           border: Border.all(color: QColors.tintBorder),
         ),
-        child: const Text(
+        child: Text(
           '⏳ جاري تعيين كابتن…',
           style: TextStyle(
             fontFamily: 'Cairo',
@@ -188,10 +188,10 @@ class _CaptainCard extends StatelessWidget {
             width: 48,
             height: 48,
             alignment: Alignment.center,
-            decoration: const BoxDecoration(color: QColors.ink, shape: BoxShape.circle),
+            decoration: BoxDecoration(color: QColors.inkSurface, shape: BoxShape.circle),
             child: Text(
               letter,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Cairo',
                 fontSize: 20,
                 fontWeight: FontWeight.w900,
@@ -208,7 +208,7 @@ class _CaptainCard extends StatelessWidget {
                   'الكابتن ${captain.name} $headline',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Cairo',
                     fontSize: 14.5,
                     fontWeight: FontWeight.w800,
@@ -233,7 +233,7 @@ class _CaptainCard extends StatelessWidget {
               width: 42,
               height: 42,
               alignment: Alignment.center,
-              decoration: const BoxDecoration(color: QColors.brand, shape: BoxShape.circle),
+              decoration: BoxDecoration(color: QColors.brand, shape: BoxShape.circle),
               child: const Text('📞', style: TextStyle(fontSize: 18)),
             ),
           ),
@@ -258,7 +258,7 @@ class _PackingList extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'محتويات الطلب',
             style: TextStyle(
               fontFamily: 'Cairo',
@@ -280,7 +280,7 @@ class _PackingList extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               '📝 ${order.customerNotes!.trim()} — تم التنبيه للمطبخ',
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Cairo',
                 fontSize: 12.5,
                 fontWeight: FontWeight.w700,
@@ -332,7 +332,7 @@ class _PackRow extends StatelessWidget {
             // «✓ مُعبأ» بتظهر بعد ما الموظف يعلّم بس.
             if (checked) ...[
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 '✓ مُعبأ',
                 style: TextStyle(
                   fontFamily: 'Cairo',
@@ -369,7 +369,7 @@ class _PaymentStrip extends StatelessWidget {
         border: Border.all(color: prepaid ? QColors.successTint : QColors.tintBorder),
       ),
       child: prepaid
-          ? const Text(
+          ? Text(
               '💵 الطلب مدفوع إلكترونياً — لا تحصّل كاش',
               style: TextStyle(
                 fontFamily: 'Cairo',
@@ -380,7 +380,7 @@ class _PaymentStrip extends StatelessWidget {
             )
           : Row(
               children: [
-                const Text(
+                Text(
                   '💵 تحصيل كاش: ',
                   style: TextStyle(
                     fontFamily: 'Cairo',

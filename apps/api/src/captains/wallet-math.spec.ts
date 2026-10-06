@@ -3,7 +3,7 @@ import { availableToWithdraw, withdrawalRejection, MIN_WITHDRAWAL } from './wall
 
 // محفظة الكابتن — المتاح للسحب بيحجز السحوبات المعلّقة، والسحب له حد أدنى وسقف.
 describe('محفظة الكابتن — المتاح للسحب', () => {
-  it('مافيش معلّق → المتاح = الرصيد', () => {
+  it('لا معلّق → المتاح = الرصيد', () => {
     expect(availableToWithdraw(200, 0)).toBe(200);
   });
 
@@ -11,7 +11,7 @@ describe('محفظة الكابتن — المتاح للسحب', () => {
     expect(availableToWithdraw(200, 120)).toBe(80); // 200 − 120
   });
 
-  it('معلّق أكبر من الرصيد → صفر (مش سالب)', () => {
+  it('معلّق أكبر من الرصيد → صفر (لا سالب)', () => {
     expect(availableToWithdraw(50, 80)).toBe(0);
   });
 });

@@ -131,7 +131,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     final devCode = auth.devCode;
 
     return Scaffold(
-      backgroundColor: QColors.ink,
+      backgroundColor: QColors.inkSurface,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -159,7 +159,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                     Text.rich(
                       TextSpan(
                         text: 'بعتنا رمز من ٤ أرقام على ',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Cairo',
                           fontSize: 14.5,
                           fontWeight: FontWeight.w600,
@@ -236,7 +236,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                           ? Text.rich(
                               TextSpan(
                                 text: 'إعادة الإرسال خلال ',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontFamily: 'Cairo',
                                   fontSize: 13.5,
                                   fontWeight: FontWeight.w600,
@@ -257,8 +257,8 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                           : GestureDetector(
                               onTap: _resend,
                               behavior: HitTestBehavior.opaque,
-                              child: const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
                                 child: Text(
                                   'إعادة إرسال الرمز',
                                   style: TextStyle(
@@ -363,7 +363,7 @@ class _DevCodeHint extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
+            Text(
               'رمز التطوير: ',
               style: TextStyle(
                 fontFamily: 'Cairo',
@@ -401,7 +401,7 @@ class _ConfirmButton extends StatelessWidget {
           height: QSpace.tapTarget,
           alignment: Alignment.center,
           child: loading
-              ? const SizedBox(
+              ? SizedBox(
                   width: 20,
                   height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2.4, color: QColors.ink),
@@ -426,11 +426,11 @@ void _snack(BuildContext context, String message) {
     ..hideCurrentSnackBar()
     ..showSnackBar(
       SnackBar(
-        backgroundColor: QColors.ink,
+        backgroundColor: QColors.inkSurface,
         behavior: SnackBarBehavior.floating,
         content: Text(
           message,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Cairo',
             fontSize: 13.5,
             fontWeight: FontWeight.w700,

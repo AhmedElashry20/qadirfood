@@ -37,7 +37,7 @@ export class ZonesController {
 
   @Get('lookup')
   @Roles(UserRole.ADMIN, UserRole.CUSTOMER)
-  @ApiOperation({ summary: 'المنطقة اللي بتغطّي إحداثي (ورسومها)' })
+  @ApiOperation({ summary: 'المنطقة التي تغطّي إحداثياً (ورسومها)' })
   lookup(@Query('lat') lat: string, @Query('lng') lng: string) {
     return this.zones.lookup(Number(lat), Number(lng));
   }

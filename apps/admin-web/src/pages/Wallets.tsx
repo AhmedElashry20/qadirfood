@@ -199,7 +199,7 @@ export default function Wallets() {
   });
 
   /**
-   * مافيش endpoint بيجمّع أرصدة كل الكباتن — فبنجمع أول ١٠٠ كابتن من
+   * لا يوجد endpoint بيجمّع أرصدة كل الكباتن — فبنجمع أول ١٠٠ كابتن من
    * `GET /captains` (أقصى pageSize مسموح) وبنقول ده صراحةً في البطاقة.
    */
   const balances = useQuery({
@@ -282,7 +282,7 @@ export default function Wallets() {
             size="sm"
             icon="⬇"
             disabled={!rows.length}
-            title={rows.length ? 'تصدير الصفحة المعروضة' : 'مافيش صفوف للتصدير'}
+            title={rows.length ? 'تصدير الصفحة المعروضة' : 'لا توجد صفوف للتصدير'}
             onClick={() => downloadCsv(rows)}
           >
             تصدير
@@ -305,7 +305,7 @@ export default function Wallets() {
           <KpiCard
             label="حُوّل (من الصفحة المحمّلة)"
             value={<Money value={transferredAmount} size="xl" hideCurrency />}
-            note="مجموع الطلبات المعتمدة/المحوّلة في الصفحة المعروضة — مش إجمالي الشهر، مافيش endpoint تجميعي"
+            note="مجموع الطلبات المعتمدة/المحوَّلة في الصفحة المعروضة — لا إجمالي الشهر، ولا يوجد endpoint تجميعي"
           />
 
           <KpiCard
@@ -316,7 +316,7 @@ export default function Wallets() {
             note={
               balances.isError
                 ? 'تعذّر تحميل الأرصدة'
-                : `من أول ${ltr(num(balancesCount))} كابتن من إجمالي ${ltr(num(balancesAll))} — مافيش endpoint تجميعي`
+                : `من أول ${ltr(num(balancesCount))} كابتن من إجمالي ${ltr(num(balancesAll))} — لا يوجد endpoint تجميعي`
             }
           />
         </div>
@@ -342,7 +342,7 @@ export default function Wallets() {
                   ) : rows.length === 0 ? (
                     <EmptyState
                       icon="👛"
-                      title="مافيش طلبات سحب في الفلتر ده"
+                      title="لا توجد طلبات سحب في هذا الفلتر"
                       description="غيّر حالة الطلبات من الشريط العلوي."
                     />
                   ) : (
@@ -543,13 +543,13 @@ function RejectModal({ row, onClose, onSubmit, isPending, error }: RejectModalPr
         <Field
           label="سبب الرفض"
           required
-          hint="الرفض ما بيغيّرش رصيد الكابتن — بيقفل الطلب بس، والسبب بيوصله في تطبيقه."
+          hint="الرفض لا يغيّر رصيد الكابتن — يقفل الطلب فقط، ويصله السبب في تطبيقه."
           error={localError ?? error}
         >
           <TextInput
             value={reason}
             onChange={(event) => setReason(event.target.value)}
-            placeholder="مثلاً: الآيبان مش مطابق لاسم الكابتن"
+            placeholder="مثلاً: الآيبان غير مطابق لاسم الكابتن"
             maxLength={300}
             autoFocus
           />

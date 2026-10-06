@@ -42,7 +42,7 @@ type DocumentType = 'IDENTITY' | 'LICENSE' | 'VEHICLE_REG' | 'INSURANCE' | 'PHOT
 type DocumentStatus = 'MISSING' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
 
 interface CaptainDocument {
-  /** null لما الوثيقة لسه مترفعتش — ساعتها مافيش حاجة تتراجع. */
+  /** null لما الوثيقة لم تُرفَع بعد — ساعتها مافيش حاجة تتراجع. */
   id: string | null;
   type: DocumentType;
   status: DocumentStatus;
@@ -312,7 +312,7 @@ function DocumentsReview({ viewTabs }: { viewTabs: ReactNode }) {
         actions={
           <>
             <SearchInput value={search} onChange={setSearch} placeholder="⌕ اسم / جوال الكابتن…" width={220} />
-            <Button variant="outline" size="sm" icon="📄" disabled title="مافيش endpoint لتصدير تقرير الهيئة">
+            <Button variant="outline" size="sm" icon="📄" disabled title="لا يوجد endpoint لتصدير تقرير الهيئة">
               تقرير جاهز للهيئة
             </Button>
           </>
@@ -368,10 +368,10 @@ function DocumentsReview({ viewTabs }: { viewTabs: ReactNode }) {
                   ) : rows.length === 0 ? (
                     <EmptyState
                       icon="🛡"
-                      title={search ? 'مافيش نتائج للبحث' : 'مافيش كباتن في الفلتر ده'}
+                      title={search ? 'لا توجد نتائج للبحث' : 'لا يوجد كباتن في هذا الفلتر'}
                       description={
                         search
-                          ? 'البحث بيشتغل على الصفحة المعروضة بس — الـ endpoint مافيهوش بحث نصي.'
+                          ? 'يعمل البحث على الصفحة المعروضة فقط — لا يوجد بحث نصي في الـ endpoint.'
                           : 'غيّر الفلتر من الشريط العلوي.'
                       }
                     />
@@ -543,7 +543,7 @@ function DocumentCell({ document, onOpen }: DocumentCellProps) {
 
   const meta = cellMeta(document);
 
-  // الوثيقة اللي لسه مترفعتش مالهاش id — مافيش حاجة تتراجع
+  // الوثيقة اللي لم تُرفَع بعد مالهاش id — مافيش حاجة تتراجع
   if (!document.id) {
     return <span className="text-[11.5px] font-bold text-faint">{meta.label}</span>;
   }
@@ -740,11 +740,11 @@ function ReviewModal({ entry, onClose, onDone }: ReviewModalProps) {
             </Field>
 
             {reasonChoice === 'سبب آخر' ? (
-              <Field label="اكتب السبب" required hint="السبب بيوصل للكابتن في تطبيقه عشان يعرف يصلّح إيه.">
+              <Field label="اكتب السبب" required hint="يصل السبب إلى الكابتن في تطبيقه ليعرف ما يصلحه.">
                 <TextInput
                   value={reasonText}
                   onChange={(event) => setReasonText(event.target.value)}
-                  placeholder="مثلاً: تاريخ الانتهاء مش ظاهر في الصورة"
+                  placeholder="مثلاً: تاريخ الانتهاء غير ظاهر في الصورة"
                   maxLength={300}
                   autoFocus
                 />
@@ -755,7 +755,7 @@ function ReviewModal({ entry, onClose, onDone }: ReviewModalProps) {
           <div className="flex flex-col gap-3">
             <Field
               label="تاريخ الانتهاء (اختياري)"
-              hint="لو حطّيته هيتسجّل مع الاعتماد — وسيبه فاضي لو الوثيقة مالهاش تاريخ انتهاء."
+              hint="إن أدخلته سيُسجَّل مع الاعتماد — واتركه فارغاً إن لم يكن للوثيقة تاريخ انتهاء."
               error={review.isError ? review.error.message : null}
             >
               <TextInput
@@ -906,10 +906,10 @@ function FaceReview({ viewTabs }: { viewTabs: ReactNode }) {
                   ) : rows.length === 0 ? (
                     <EmptyState
                       icon="🤳"
-                      title={search ? 'مافيش نتائج للبحث' : 'مافيش كباتن'}
+                      title={search ? 'لا توجد نتائج للبحث' : 'لا يوجد كباتن'}
                       description={
                         search
-                          ? 'البحث بيشتغل على الأسماء والجوالات المعروضة بس.'
+                          ? 'يعمل البحث على الأسماء والجوالات المعروضة فقط.'
                           : 'أول ما يتسجّل كباتن هيبان هنا مع حالة تحقّقه النهاردة.'
                       }
                     />
@@ -1041,7 +1041,7 @@ function FaceReviewBanner() {
   );
 }
 
-// ── صورة السيلفي المصغّرة — بديل نظيف «مافيش صورة» لو الرابط فاضي أو الصورة وقعت ──
+// ── صورة السيلفي المصغّرة — بديل نظيف «لا توجد صورة» لو الرابط فاضي أو الصورة وقعت ──
 
 function SelfieThumb({ url, name, onOpen }: { url: string | null; name: string; onOpen: () => void }) {
   const [failed, setFailed] = useState(false);
@@ -1052,10 +1052,10 @@ function SelfieThumb({ url, name, onOpen }: { url: string | null; name: string; 
   if (!url || failed) {
     return (
       <span
-        title="مافيش صورة"
+        title="لا توجد صورة"
         className="inline-flex h-[40px] w-[40px] items-center justify-center rounded-[9px] border border-dashed border-line bg-soft px-1 text-center text-[8.5px] font-bold leading-tight text-faint"
       >
-        مافيش صورة
+        لا توجد صورة
       </span>
     );
   }
@@ -1190,7 +1190,7 @@ function FaceRejectModal({ target, onClose, onDone, onError }: FaceRejectModalPr
             rows={3}
             maxLength={300}
             autoFocus
-            placeholder="مثلاً: الوجه مش واضح · الصورة مش للمندوب · إضاءة سيئة"
+            placeholder="مثلاً: الوجه غير واضح · الصورة ليست للمندوب · إضاءة سيئة"
             className="w-full resize-none rounded-[10px] border border-line bg-surface p-3 text-[12.5px] font-bold text-ink outline-none transition-colors placeholder:font-bold placeholder:text-faint focus:border-brand"
           />
         </Field>
@@ -1213,7 +1213,7 @@ function SelfieLightbox({ target, onClose }: { target: { name: string; url: stri
       <div className="flex min-h-[280px] items-center justify-center overflow-hidden rounded-[12px] border border-line bg-soft">
         {failed ? (
           <span className="p-8 text-center text-[12.5px] font-bold text-faint">
-            مافيش صورة — الرابط مكسور أو الصورة مش متاحة على السيرفر.
+            لا توجد صورة — الرابط مكسور أو الصورة مش متاحة على السيرفر.
           </span>
         ) : (
           <img

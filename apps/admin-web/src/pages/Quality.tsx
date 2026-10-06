@@ -265,7 +265,7 @@ export default function Quality() {
                 d.worstBranches.map((b) => ({ id: b.id, name: b.nameAr, rating: b.rating, ratingCount: b.ratingCount }))
               }
               emptyIcon="🍔"
-              emptyTitle="مافيش فروع متقيّمة لسه"
+              emptyTitle="لا توجد فروع مُقيَّمة بعد"
             />
           </Card>
 
@@ -277,7 +277,7 @@ export default function Quality() {
                 d.worstCaptains.map((c) => ({ id: c.id, name: c.name, rating: c.rating, ratingCount: c.ratingCount }))
               }
               emptyIcon="🛵"
-              emptyTitle="مافيش كباتن متقيّمين لسه"
+              emptyTitle="لا يوجد كباتن مُقيَّمون بعد"
             />
           </Card>
         </div>
@@ -315,7 +315,7 @@ function SummaryKpis({ summary }: { summary: Summary }) {
   );
 }
 
-/** بطاقة متوسط تقييم — بتعرض «—» بأمانة لما مافيش تقييمات بدل صفر وهمي. */
+/** بطاقة متوسط تقييم — بتعرض «—» بأمانة لما لا توجد تقييمات بدل صفر وهمي. */
 function RatingKpi({ label, avg, reviewCount }: { label: string; avg: number | null; reviewCount: number }) {
   return (
     <KpiCard
@@ -330,7 +330,7 @@ function RatingKpi({ label, avg, reviewCount }: { label: string; avg: number | n
           <span className="font-num text-faint">{DASH}</span>
         )
       }
-      note={avg !== null ? `من ${num(reviewCount)} تقييم` : 'مافيش تقييمات في الفترة'}
+      note={avg !== null ? `من ${num(reviewCount)} تقييم` : 'لا توجد تقييمات في الفترة'}
     />
   );
 }
@@ -352,7 +352,7 @@ function StarBreakdown({
   const dist = query.data?.[dataKey] ?? [];
   const total = dist.reduce((sum, d) => sum + d.count, 0);
 
-  if (total === 0) return <EmptyState icon="⭐" title="مافيش تقييمات في الفترة" />;
+  if (total === 0) return <EmptyState icon="⭐" title="لا توجد تقييمات في الفترة" />;
 
   const max = Math.max(...dist.map((d) => d.count));
   const ordered = [...dist].sort((a, b) => b.stars - a.stars);
@@ -416,8 +416,8 @@ function TrendChart({ query, range }: { query: UseQueryResult<QualityOverview>; 
     return (
       <EmptyState
         icon="📈"
-        title="مافيش تقييمات في الفترة دي"
-        description="الرسم بيتبني من التقييمات الحقيقية — مافيش تعبئة بأرقام تقديرية."
+        title="لا توجد تقييمات في هذه الفترة"
+        description="يُبنى الرسم من التقييمات الفعلية — دون تعبئة بأرقام تقديرية."
       />
     );
   }
@@ -553,8 +553,8 @@ function ComplaintsFeed({ query }: { query: UseQueryResult<QualityOverview> }) {
     return (
       <EmptyState
         icon="✅"
-        title="مافيش شكاوى في الفترة"
-        description="أحدث التقييمات المنخفضة اللي عليها تعليق هتظهر هنا."
+        title="لا توجد شكاوى في الفترة"
+        description="ستظهر هنا أحدث التقييمات المنخفضة التي عليها تعليق."
       />
     );
   }
@@ -734,7 +734,7 @@ function ReviewsSection({ range }: { range: Range }) {
           ) : rows.length === 0 ? (
             <EmptyState
               icon="⭐"
-              title={filtered ? 'مافيش نتائج للفلتر ده' : 'مافيش تقييمات'}
+              title={filtered ? 'لا توجد نتائج لهذا الفلتر' : 'لا توجد تقييمات'}
               description={filtered ? 'غيّر الفلاتر أو البحث.' : 'أول ما العملاء يقيّموا الطلبات هتظهر هنا.'}
             />
           ) : (
