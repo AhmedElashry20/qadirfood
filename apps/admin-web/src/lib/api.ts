@@ -30,9 +30,28 @@ const TIMEOUT_MESSAGE = 'انتهت مهلة الطلب — الخادم لا ي
  *     VITE_API_URL=https://xxx.onrender.com npm run build
  * بدونه كانت اللوحة تطلب '/api' من دومين الاستضافة نفسه فتحصل على 404.
  */
-const API_BASE = import.meta.env.VITE_API_URL
-  ? `${String(import.meta.env.VITE_API_URL).replace(/\/$/, '')}/api`
-  : '/api';
+/**
+ * عنوان الـ API.
+ *
+ * الترتيب: إعداد وقت التشغيل من `config.js` ← متغيّر وقت البناء ← '/api'.
+ *
+ * إعداد وقت التشغيل هو ما يُعتمد عند النشر على استضافة ثابتة: يُبنى الملف مرة
+ * ويُضبط العنوان بعد الرفع بتعديل سطر — بلا إعادة بناء. ونفس الملف تقرؤه
+ * تطبيقات الويب الثلاثة، فمصدر العنوان واحد في كل الواجهات.
+ *
+ * و'/api' يبقى الافتراضي في التطوير فيمرّ على بروكسي Vite كما كان.
+ */
+function resolveApiBase(): string {
+  const runtime = (window as { qadirConfig?: { apiUrl?: string } }).qadirConfig?.apiUrl?.trim();
+  const chosen =
+    runtime && !runtime.includes('REPLACE_ME')
+      ? runtime
+      : (import.meta.env.VITE_API_URL ?? '').trim();
+
+  return chosen ? `${chosen.replace(/\/$/, '')}/api` : '/api';
+}
+
+const API_BASE = resolveApiBase();
 
 export const api: AxiosInstance = axios.create({
   baseURL: API_BASE,
