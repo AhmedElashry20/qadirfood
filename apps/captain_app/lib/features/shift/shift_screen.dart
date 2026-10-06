@@ -64,7 +64,7 @@ class ShiftScreen extends ConsumerWidget {
                 child: QLoading(),
               ),
               error: (error, _) => QErrorView(
-                message: error is ApiException ? error.message : 'مش قادرين نجيب الورديات',
+                message: error is ApiException ? error.message : 'تعذّر تحميل الورديات',
                 onRetry: () => ref.invalidate(shiftsByRangeProvider),
               ),
               data: (summary) => Column(
@@ -79,7 +79,7 @@ class ShiftScreen extends ConsumerWidget {
                   if (summary.isEmpty)
                     const QEmpty(
                       emoji: '🗓',
-                      message: 'مفيش ورديات في الفترة دي — ابدأ وردية عشان تستقبل طلبات',
+                      message: 'لا توجد ورديات في هذه الفترة — ابدأ وردية لتستقبل الطلبات',
                     )
                   else
                     _ShiftHistory(shifts: summary.shifts),
@@ -135,7 +135,7 @@ class _StatsCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
       decoration: BoxDecoration(
-        color: QColors.ink,
+        color: QColors.inkSurface,
         borderRadius: BorderRadius.circular(QRadius.xl),
       ),
       child: Column(
@@ -143,7 +143,7 @@ class _StatsCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Text(
+              Text(
                 'ساعات الاتصال',
                 style: TextStyle(
                   fontFamily: 'Cairo',
@@ -167,13 +167,13 @@ class _StatsCard extends StatelessWidget {
                       Container(
                         width: 8,
                         height: 8,
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           color: QColors.online,
                           shape: BoxShape.circle,
                         ),
                       ),
                       const SizedBox(width: 6),
-                      const Text(
+                      Text(
                         'على وردية',
                         style: TextStyle(
                           fontFamily: 'Cairo',
@@ -192,7 +192,7 @@ class _StatsCard extends StatelessWidget {
             TextSpan(children: _durationSpans(summary.onlineMinutes, size: 30, color: Colors.white)),
           ),
           const SizedBox(height: 14),
-          const Divider(color: QColors.inkLine, height: 1),
+          Divider(color: QColors.inkLine, height: 1),
           const SizedBox(height: 14),
           Row(
             children: [
@@ -234,7 +234,7 @@ class _Stat extends StatelessWidget {
         const SizedBox(height: 3),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Cairo',
             fontSize: 11.5,
             fontWeight: FontWeight.w700,
@@ -321,7 +321,7 @@ class _ShiftHistory extends StatelessWidget {
       child: Column(
         children: [
           for (var i = 0; i < shifts.length; i++) ...[
-            if (i != 0) const Divider(color: QColors.line, height: 1),
+            if (i != 0) Divider(color: QColors.line, height: 1),
             _ShiftRow(shift: shifts[i]),
           ],
         ],
@@ -352,7 +352,7 @@ class _ShiftRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // مدى الوقت — البداية «←» النهاية، أو «شغّالة دلوقتي» للمفتوحة.
+                // مدى الوقت — البداية «←» النهاية، أو «تعمل الآن» للمفتوحة.
                 if (shift.isActive)
                   Row(
                     children: [
@@ -363,8 +363,8 @@ class _ShiftRow extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const Text(
-                        'شغّالة دلوقتي',
+                      Text(
+                        'تعمل الآن',
                         style: TextStyle(
                           fontFamily: 'Cairo',
                           fontSize: 11.5,
@@ -423,7 +423,7 @@ class _WeekList extends StatelessWidget {
       ),
       error: (error, _) => QCard(
         child: Text(
-          error is ApiException ? error.message : 'مش قادرين نجيب أيام الأسبوع',
+          error is ApiException ? error.message : 'تعذّر تحميل أيام الأسبوع',
           style: QText.bodyMuted,
         ),
       ),
@@ -432,7 +432,7 @@ class _WeekList extends StatelessWidget {
         child: Column(
           children: [
             for (var i = 0; i < summary.dailySeries.length; i++) ...[
-              if (i != 0) const Divider(color: QColors.line, height: 1),
+              if (i != 0) Divider(color: QColors.line, height: 1),
               _DayRow(bar: summary.dailySeries[i]),
             ],
           ],
@@ -490,16 +490,18 @@ class _DayRow extends StatelessWidget {
 
 /// دقايق → «١س ٥٥د»: الأرقام Outfit (معزولة bidi) ووحدات «س/د» Cairo أصغر.
 /// بيرجّع spans عشان نفس التنسيق يتحط في كارت كبير أو صف صغير.
-List<InlineSpan> _durationSpans(int minutes, {double size = 15, Color color = QColors.ink}) {
+/// `color` nullable — القيمة الافتراضية لازم تكون ثابتة، وألوان الثيم بقت getters.
+List<InlineSpan> _durationSpans(int minutes, {double size = 15, Color? color}) {
+  final resolved = color ?? QColors.ink;
   final hours = minutes ~/ 60;
   final mins = minutes % 60;
 
-  final numStyle = QText.num(size: size, weight: FontWeight.w800, color: color);
+  final numStyle = QText.num(size: size, weight: FontWeight.w800, color: resolved);
   final unitStyle = TextStyle(
     fontFamily: 'Cairo',
     fontSize: size * 0.6,
     fontWeight: FontWeight.w800,
-    color: color,
+    color: resolved,
   );
 
   return [
@@ -520,7 +522,7 @@ void _snack(BuildContext context, String message) {
     ..hideCurrentSnackBar()
     ..showSnackBar(
       SnackBar(
-        backgroundColor: QColors.ink,
+        backgroundColor: QColors.inkSurface,
         behavior: SnackBarBehavior.floating,
         content: Text(
           message,

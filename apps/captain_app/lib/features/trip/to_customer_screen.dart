@@ -77,7 +77,7 @@ class _ToCustomerScreenState extends ConsumerState<ToCustomerScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _submitting = false);
-      _snack(context, 'مش قادرين نحدّث حالة الرحلة — جرّب تاني');
+      _snack(context, 'تعذّر تحديث حالة الرحلة — حاول مرة أخرى');
     }
   }
 
@@ -86,12 +86,12 @@ class _ToCustomerScreenState extends ConsumerState<ToCustomerScreen> {
     final tripAsync = ref.watch(tripProvider(widget.orderId));
 
     return Scaffold(
-      backgroundColor: QColors.ink,
+      backgroundColor: QColors.inkSurface,
       body: tripAsync.when(
         loading: () => const QLoading(),
         error: (error, _) => SafeArea(
           child: QErrorView(
-            message: error is ApiException ? error.message : 'مش قادرين نجيب بيانات الرحلة',
+            message: error is ApiException ? error.message : 'تعذّر تحميل بيانات الرحلة',
             onRetry: () => ref.invalidate(tripProvider(widget.orderId)),
           ),
         ),
@@ -212,7 +212,7 @@ class _NavHeader extends StatelessWidget {
                     address,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Cairo',
                       fontSize: 12.5,
                       fontWeight: FontWeight.w600,
@@ -234,7 +234,7 @@ class _NavHeader extends StatelessWidget {
                     style: QText.num(size: 17, weight: FontWeight.w800, color: QColors.brand),
                   ),
                 ),
-                const Text(
+                Text(
                   'دقائق',
                   style: TextStyle(
                     fontFamily: 'Cairo',
@@ -285,9 +285,9 @@ class _CustomerSheet extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(QSpace.screenH, 18, QSpace.screenH, 30),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: QColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(QRadius.sheet)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(QRadius.sheet)),
         boxShadow: kFloatShadow,
       ),
       child: Column(
@@ -300,7 +300,7 @@ class _CustomerSheet extends StatelessWidget {
                 width: 46,
                 height: 46,
                 alignment: Alignment.center,
-                decoration: const BoxDecoration(color: QColors.ink, shape: BoxShape.circle),
+                decoration: BoxDecoration(color: QColors.inkSurface, shape: BoxShape.circle),
                 child: Text(
                   _initial,
                   style: QText.section.copyWith(color: QColors.brand, fontSize: 18),
@@ -335,7 +335,7 @@ class _CustomerSheet extends StatelessWidget {
                 onTap: () => _snack(
                   context,
                   (phone == null || phone.isEmpty)
-                      ? 'رقم العميل مش موجود في الطلب'
+                      ? 'رقم العميل غير موجود في الطلب'
                       : 'جاري الاتصال بـ ${fmt.ltr(phone)}',
                 ),
               ),
@@ -343,7 +343,8 @@ class _CustomerSheet extends StatelessWidget {
               _RoundAction(
                 emoji: '💬',
                 background: QColors.chip,
-                onTap: () => _snack(context, 'قريباً'),
+                // `trip.id` هو معرّف الطلب — المحادثة مربوطة بالطلب مش بالعميل.
+                onTap: () => context.push(QRoutes.orderChat, extra: trip.id),
               ),
             ],
           ),
@@ -391,7 +392,7 @@ void _snack(BuildContext context, String message) {
     ..hideCurrentSnackBar()
     ..showSnackBar(
       SnackBar(
-        backgroundColor: QColors.ink,
+        backgroundColor: QColors.inkSurface,
         content: Text(
           message,
           style: QText.body.copyWith(fontSize: 14, color: QColors.brand),

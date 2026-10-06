@@ -26,6 +26,7 @@ import {
   PaginationDto,
   RejectWithdrawalDto,
   ReviewDocumentDto,
+  SuspendCaptainDto,
   UpdateCaptainDto,
   UploadDocumentDto,
 } from './captains.dto';
@@ -81,7 +82,7 @@ export class CaptainsMeController {
   }
 
   @Get('distributions')
-  @ApiOperation({ summary: 'توزيعات شركتي — لو تابع لشركة، دي أرباحه بدل المحفظة' })
+  @ApiOperation({ summary: 'توزيعات شركتي — إن كان تابعاً لشركة، فهذه أرباحه بدل المحفظة' })
   distributions(@CurrentUser() user: AuthUser) {
     return this.service.myDistributions(this.service.requireCaptainId(user));
   }
@@ -205,6 +206,22 @@ export class CaptainsAdminController {
     @Body() dto: ReviewDocumentDto,
   ) {
     return this.service.reviewDocument(id, user.userId, dto);
+  }
+
+  @Patch(':id/suspend')
+  @ApiOperation({ summary: 'إيقاف كابتن — منع فوري للدخول والتوزيع (السبب إلزامي)' })
+  suspend(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SuspendCaptainDto,
+  ) {
+    return this.service.suspendCaptain(id, user.userId, dto.reason, dto.force ?? false);
+  }
+
+  @Patch(':id/reinstate')
+  @ApiOperation({ summary: 'رفع الإيقاف عن كابتن' })
+  reinstate(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.service.reinstateCaptain(id, user.userId);
   }
 
   @Get()

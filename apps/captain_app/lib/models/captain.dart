@@ -99,7 +99,7 @@ class Captain {
 
   // ── مساعدات للشاشات ──
 
-  /// أول حرف من الاسم — للأڤاتار الحرفي لما مافيش صورة.
+  /// أول حرف من الاسم — للأڤاتار الحرفي لما لا توجد صورة.
   String get initial {
     final name = fullName.trim();
     return name.isEmpty ? '؟' : name.substring(0, 1);
@@ -249,7 +249,7 @@ class Captain {
 /// اللي لسه مترفعش خالص). الـ enum القديم مالوش الحالتين دول وهو مستخدم في
 /// تستات موجودة، فسايبينه زي ما هو ومعرّفين النوع الصح هنا.
 enum CaptainDocStatus {
-  missing('MISSING', 'لسه مترفعتش'),
+  missing('MISSING', 'لم تُرفَع بعد'),
   pending('PENDING', '⏳ قيد المراجعة'),
   approved('APPROVED', '✓ تم القبول'),
   rejected('REJECTED', '✕ مرفوضة'),
@@ -298,7 +298,7 @@ class CaptainDocument {
     this.updatedAt,
   });
 
-  /// `null` لما الوثيقة لسه مترفعتش خالص.
+  /// `null` لما الوثيقة لم تُرفَع بعد خالص.
   final String? id;
 
   /// IDENTITY / LICENSE / VEHICLE_REG / INSURANCE / PHOTO.

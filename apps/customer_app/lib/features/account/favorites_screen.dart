@@ -30,7 +30,7 @@ class FavoritesScreen extends ConsumerWidget {
       backgroundColor: QColors.canvas,
       appBar: const QHeader(title: 'المفضلة ♥'),
       body: favorites.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: QColors.brand)),
+        loading: () => Center(child: CircularProgressIndicator(color: QColors.brand)),
         error: (e, _) => _ErrorView(
           message: e is ApiException ? e.message : 'تعذّر تحميل المفضلة',
           onRetry: () => ref.invalidate(favoriteRestaurantsProvider),
@@ -39,7 +39,7 @@ class FavoritesScreen extends ConsumerWidget {
             ? const Padding(
                 padding: EdgeInsets.all(QSpace.screenH),
                 child: QEmpty(
-                  message: 'مافي مطاعم في المفضلة — اضغط ♥ على أي مطعم',
+                  message: 'لا توجد مطاعم في المفضلة — اضغط ♥ على أي مطعم',
                   emoji: '🤍',
                 ),
               )
@@ -99,7 +99,7 @@ void _snack(BuildContext context, String message) {
       SnackBar(
         content: Text(message, style: QText.body.copyWith(color: QColors.brand)),
         behavior: SnackBarBehavior.floating,
-        backgroundColor: QColors.ink,
+        backgroundColor: QColors.inkSurface,
         duration: const Duration(seconds: 3),
       ),
     );

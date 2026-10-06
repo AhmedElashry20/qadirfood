@@ -10,7 +10,7 @@ import '../../models/order.dart';
 import '../../providers/orders_provider.dart';
 import '../../widgets/common.dart';
 
-const _sectionTitle = TextStyle(
+final _sectionTitle = TextStyle(
   fontFamily: 'Cairo',
   fontSize: 14,
   fontWeight: FontWeight.w800,
@@ -50,7 +50,7 @@ class _RateOrderScreenState extends ConsumerState<RateOrderScreen> {
         5 => 'ممتاز! 🎉',
         4 => 'جيد جداً!',
         3 => 'كويس',
-        _ => 'نحسّن إيه؟',
+        _ => 'ما الذي يمكن تحسينه؟',
       };
 
   /// الـ API بياخد تعليق واحد — الوسوم المختارة بتتضاف له (مافيش endpoint للوسوم).
@@ -99,7 +99,7 @@ class _RateOrderScreenState extends ConsumerState<RateOrderScreen> {
       backgroundColor: QColors.surface,
       body: SafeArea(
         child: order.when(
-          loading: () => const Center(child: CircularProgressIndicator(color: QColors.brand)),
+          loading: () => Center(child: CircularProgressIndicator(color: QColors.brand)),
           error: (e, _) => _ErrorView(
             message: e is ApiException ? e.message : 'تعذّر تحميل الطلب',
             onRetry: () => ref.invalidate(orderProvider(widget.orderId)),
@@ -122,8 +122,8 @@ class _RateOrderScreenState extends ConsumerState<RateOrderScreen> {
           children: [
             InkWell(
               onTap: () => context.pop(),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                 child: Text(
                   'تخطي',
                   style: TextStyle(
@@ -147,7 +147,7 @@ class _RateOrderScreenState extends ConsumerState<RateOrderScreen> {
             Text(
               'كيف كان طلبك من ${order.restaurantName}؟',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Cairo',
                 fontSize: 20,
                 fontWeight: FontWeight.w900,
@@ -177,7 +177,7 @@ class _RateOrderScreenState extends ConsumerState<RateOrderScreen> {
             const SizedBox(height: 10),
             Text(
               _ratingLabel,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Cairo',
                 fontSize: 14,
                 fontWeight: FontWeight.w800,
@@ -189,7 +189,7 @@ class _RateOrderScreenState extends ConsumerState<RateOrderScreen> {
         const SizedBox(height: 20),
 
         // ── إيش عجبك؟ ──
-        const Text('إيش عجبك؟', style: _sectionTitle),
+        Text('إيش عجبك؟', style: _sectionTitle),
         const SizedBox(height: 10),
         Wrap(
           spacing: 8,
@@ -267,7 +267,7 @@ class _RateOrderScreenState extends ConsumerState<RateOrderScreen> {
           ),
           child: Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   '🎁 أضف إكرامية للكابتن',
                   maxLines: 1,
@@ -364,7 +364,7 @@ class _ErrorView extends StatelessWidget {
 SnackBar _snackBar(String message) => SnackBar(
       content: Text(message, style: QText.body.copyWith(color: QColors.brand)),
       behavior: SnackBarBehavior.floating,
-      backgroundColor: QColors.ink,
+      backgroundColor: QColors.inkSurface,
       duration: const Duration(seconds: 3),
     );
 

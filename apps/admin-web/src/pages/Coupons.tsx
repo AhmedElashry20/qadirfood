@@ -100,7 +100,7 @@ export default function Coupons() {
           {/* ── قائمة الكوبونات ── */}
           <Card padding="none" className="flex flex-1 flex-col overflow-hidden">
             <div className="shrink-0 p-[14px] pb-0">
-              <SectionTitle aside="مافيش endpoint">الكوبونات الحالية</SectionTitle>
+              <SectionTitle aside="لا يوجد endpoint">الكوبونات الحالية</SectionTitle>
               <MissingDataNote className="mb-2">
                 جدول <span className="num">coupons</span> موجود ومقروء من تطبيق العميل بس — «GET /customer/coupons»
                 متعلّم <span className="num">@Roles(CUSTOMER)</span>، فتوكن الأدمن بياخد <span className="num">403</span>.
@@ -121,7 +121,7 @@ export default function Coupons() {
 
                 <EmptyState
                   icon="🎟"
-                  title="مافيش endpoint أدمن للكوبونات"
+                  title="لا يوجد endpoint إداري للكوبونات"
                   description="القائمة هتتعبّى أول ما «GET /admin/coupons» ينزل. ما بنعرضش كوبونات وهمية."
                 />
               </Table>
@@ -142,7 +142,7 @@ export default function Coupons() {
             </Field>
 
             {/* نوع الخصم — segmented */}
-            <Field label="نوع الخصم" hint="عمود percentOff أو amountOff — واحد بس منهم بيتملى.">
+            <Field label="نوع الخصم" hint="عمود percentOff أو amountOff — يُملأ أحدهما فقط.">
               <div className="flex overflow-hidden rounded-[10px] border border-line">
                 <SegmentButton active={form.kind === 'PERCENT'} onClick={() => set('kind', 'PERCENT')}>
                   نسبة %
@@ -206,7 +206,7 @@ export default function Coupons() {
                 />
               </Field>
 
-              <Field label="لكل مستخدم" hint="مافيش عمود ليها في الschema — محتاجة توسعة.">
+              <Field label="لكل مستخدم" hint="لا يوجد عمود لها في الـ schema — تحتاج توسعة.">
                 <TextInput
                   latin
                   inputMode="numeric"
@@ -237,7 +237,7 @@ export default function Coupons() {
               </Field>
             </div>
 
-            <Field label="الاستهداف" hint="مافيش أعمدة استهداف في جدول coupons — محتاجة توسعة في الschema.">
+            <Field label="الاستهداف" hint="لا توجد أعمدة استهداف في جدول coupons — تحتاج توسعة في الـ schema.">
               <div className="flex flex-wrap gap-1.5">
                 {TARGETS.map((target) => (
                   <Chip
@@ -257,7 +257,7 @@ export default function Coupons() {
             </Field>
 
             <div className="mt-1 flex flex-col gap-2 border-t border-hair pt-3">
-              <Button block disabled title="مافيش «POST /admin/coupons» في الـ API">
+              <Button block disabled title="لا يوجد «POST /admin/coupons» في الـ API">
                 إنشاء الكوبون
               </Button>
 

@@ -40,3 +40,10 @@ GoogleService-Info.plist
 .vscode/*
 !.vscode/extensions.json
 .DS_Store
+
+# ملف وسيط بخطوط مدمجة (٤٣٠ كيلو) — يُولَّد بـ docs/credentials/build.sh
+docs/credentials/credentials.html
+
+# ملف بيانات الدخول — المستودع عام، ونشر الحسابات فيه يجعلها متاحة للجميع.
+# سكربتا التوليد (build.sh و render.py) يبقيان، فيُعاد توليد الملف عند الحاجة.
+docs/credentials/*.pdf

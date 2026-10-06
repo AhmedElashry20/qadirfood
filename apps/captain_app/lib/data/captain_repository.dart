@@ -56,6 +56,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/api_client.dart';
 import '../core/enums.dart';
 import '../core/format.dart';
+import '../models/order_chat.dart';
 import '../models/captain.dart';
 import '../models/distributions.dart';
 import '../models/earnings.dart';
@@ -132,7 +133,7 @@ const _activeStatuses = [
 // ─────────────────────────── الدخول ───────────────────────────
 
 class AuthRepository {
-  AuthRepository(this._api);
+  const AuthRepository(this._api);
 
   final ApiClient _api;
 
@@ -186,7 +187,7 @@ class AuthRepository {
 // ─────────────────────────── الرحلات ───────────────────────────
 
 class TripsRepository {
-  TripsRepository(this._api);
+  const TripsRepository(this._api);
 
   final ApiClient _api;
 
@@ -280,6 +281,27 @@ class TripsRepository {
       _api.post<Map<String, dynamic>>('/relay/$id/confirm', body: {'code': code, 'photoUrl': photoUrl});
 
   /// GET /relay/incoming — التسليمات المستنية تأكيد مندوب المشي.
+  // ── محادثة الطلب مع العميل ──
+  // نفس مسارات تطبيق العميل — الصلاحية على السيرفر بتحدّد مين طرف في الطلب.
+
+  /// GET /orders/:id/messages
+  Future<OrderChat> chat(String orderId) async => OrderChat.fromJson(
+        await _api.get<Map<String, dynamic>>('/orders/$orderId/messages'),
+      );
+
+  /// POST /orders/:id/messages — بيرمي [ApiException] لو المحادثة مقفولة.
+  Future<void> sendMessage(String orderId, String body) async {
+    await _api.post<Map<String, dynamic>>(
+      '/orders/$orderId/messages',
+      body: {'body': body},
+    );
+  }
+
+  /// PATCH /orders/:id/messages/read
+  Future<void> markChatRead(String orderId) async {
+    await _api.patch<Map<String, dynamic>>('/orders/$orderId/messages/read');
+  }
+
   Future<List<Map<String, dynamic>>> relayIncoming() async {
     final res = await _api.get<List<dynamic>>('/relay/incoming');
     return res.cast<Map<String, dynamic>>();
@@ -289,7 +311,7 @@ class TripsRepository {
 // ─────────────────────────── الأرباح ───────────────────────────
 
 class EarningsRepository {
-  EarningsRepository(this._api);
+  const EarningsRepository(this._api);
 
   final ApiClient _api;
 
@@ -357,7 +379,7 @@ class EarningsRepository {
 // ─────────────────────────── الكابتن ───────────────────────────
 
 class CaptainRepository {
-  CaptainRepository(this._api);
+  const CaptainRepository(this._api);
 
   final ApiClient _api;
 
@@ -453,7 +475,7 @@ class CaptainRepository {
       );
 
       final url = asText(res.data?['url']);
-      if (url.isEmpty) throw ApiException('الرفع نجح بس مافيش رابط في الرد');
+      if (url.isEmpty) throw const ApiException('نجح الرفع لكن لا يوجد رابط في الرد');
       return url;
     } on DioException catch (e) {
       throw _asApiException(e);
@@ -639,9 +661,9 @@ class CaptainRepository {
             DioExceptionType.connectionTimeout ||
             DioExceptionType.receiveTimeout ||
             DioExceptionType.sendTimeout =>
-              'الاتصال بطيء — جرّب تاني',
-            DioExceptionType.connectionError => 'مافيش اتصال بالسيرفر',
-            _ => 'مش قادرين نرفع الملف',
+              'الاتصال بطيء — حاول مرة أخرى',
+            DioExceptionType.connectionError => 'لا يوجد اتصال بالخادم',
+            _ => 'تعذّر رفع الملف',
           },
       },
       statusCode: e.response?.statusCode,

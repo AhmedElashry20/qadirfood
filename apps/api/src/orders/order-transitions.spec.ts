@@ -50,7 +50,7 @@ describe('انتقالات حالة الطلب', () => {
     expect(canTransition(OrderStatus.DELIVERED, OrderStatus.CANCELLED)).toBe(false);
   });
 
-  it('كل حالة مصدر ليها مدخل في الخريطة (مافيش undefined بيكسر الفحص)', () => {
+  it('لكل حالة مصدر مدخل في الخريطة (بلا undefined يكسر الفحص)', () => {
     for (const s of Object.values(OrderStatus)) {
       expect(ORDER_TRANSITIONS[s]).toBeDefined();
     }

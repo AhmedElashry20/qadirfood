@@ -34,7 +34,7 @@ class WalletScreen extends ConsumerWidget {
           const SizedBox(height: 14),
           Row(
             children: [
-              const Text(
+              Text(
                 'كوبوناتي',
                 style: TextStyle(
                   fontFamily: 'Cairo',
@@ -59,8 +59,8 @@ class WalletScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 14),
           coupons.when(
-            loading: () => const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
+            loading: () => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
               child: Center(child: CircularProgressIndicator(color: QColors.brand)),
             ),
             error: (e, _) => _ErrorView(
@@ -68,7 +68,7 @@ class WalletScreen extends ConsumerWidget {
               onRetry: () => ref.invalidate(couponsProvider),
             ),
             data: (list) => list.isEmpty
-                ? const QEmpty(message: 'مافي كوبونات متاحة دلوقتي', emoji: '🎁')
+                ? const QEmpty(message: 'لا توجد كوبونات متاحة حالياً', emoji: '🎁')
                 : Column(
                     children: [
                       for (var i = 0; i < list.length; i++) ...[
@@ -96,7 +96,7 @@ class _BalanceCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: QColors.ink,
+        color: QColors.inkSurface,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
@@ -104,7 +104,7 @@ class _BalanceCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Text(
+              Text(
                 'رصيد محفظة قادر',
                 style: TextStyle(
                   fontFamily: 'Cairo',
@@ -131,7 +131,7 @@ class _BalanceCard extends StatelessWidget {
             TextSpan(
               text: balance == null ? '—' : fmt.money(balance!),
               style: QText.num(size: 34, color: QColors.brand),
-              children: const [
+              children: [
                 TextSpan(
                   text: ' ر.س',
                   style: TextStyle(
@@ -274,7 +274,7 @@ class _CouponCard extends StatelessWidget {
                           c.subtitle,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: 'Cairo',
                             fontSize: 11.5,
                             fontWeight: FontWeight.w600,
@@ -283,7 +283,7 @@ class _CouponCard extends StatelessWidget {
                         ),
                         if (!c.isUsed) ...[
                           const SizedBox(height: 6),
-                          const Text(
+                          Text(
                             'استخدم الآن ›',
                             style: TextStyle(
                               fontFamily: 'Cairo',
@@ -322,7 +322,7 @@ class _StripContent extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(c.badge, style: QText.num(size: 19, color: QColors.textMuted)),
-          const Text(
+          Text(
             'ر.س',
             style: TextStyle(
               fontFamily: 'Cairo',
@@ -340,7 +340,7 @@ class _StripContent extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text('${c.percent}%', style: QText.num(size: 19, color: QColors.ink)),
-          const Text(
+          Text(
             'خصم',
             style: TextStyle(
               fontFamily: 'Cairo',
@@ -354,11 +354,11 @@ class _StripContent extends StatelessWidget {
     }
 
     // توصيل مجاني — شريط أسود.
-    return const Column(
+    return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('🎁', style: TextStyle(fontSize: 18)),
-        SizedBox(height: 2),
+        const Text('🎁', style: TextStyle(fontSize: 18)),
+        const SizedBox(height: 2),
         Text(
           'توصيل مجاني',
           textAlign: TextAlign.center,
@@ -403,7 +403,7 @@ void _soon(BuildContext context) {
       SnackBar(
         content: Text('قريباً', style: QText.body.copyWith(color: QColors.brand)),
         behavior: SnackBarBehavior.floating,
-        backgroundColor: QColors.ink,
+        backgroundColor: QColors.inkSurface,
         duration: const Duration(seconds: 2),
       ),
     );

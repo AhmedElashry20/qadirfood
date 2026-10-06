@@ -456,7 +456,7 @@ function TeamSection({ search, onEdit, onPermissions, onToast }: TeamSectionProp
           ) : rows.length === 0 ? (
             <EmptyState
               icon="👥"
-              title={query ? 'مافيش موظف مطابق للبحث' : 'لسه مافيش موظفين'}
+              title={query ? 'لا يوجد موظف مطابق للبحث' : 'لا يوجد موظفون بعد'}
               description={
                 query
                   ? 'غيّر كلمة البحث من الشريط العلوي.'
@@ -543,7 +543,7 @@ function StaffRow({ staff, labels, onEdit, onPermissions, onToast }: StaffRowPro
       {/* الوصول — «صلاحية كاملة» معناها القايمة فاضية (بدون قيود)، مش بدون صلاحيات */}
       <TD>
         {staff.fullAccess ? (
-          <Pill tone="warn" title="قايمة الصلاحيات فاضية — وصول كامل لكل العمليات (سوبر أدمن)">
+          <Pill tone="warn" title="قائمة الصلاحيات فارغة — وصول كامل لكل العمليات (مسؤول أعلى)">
             صلاحية كاملة
           </Pill>
         ) : (
@@ -769,7 +769,7 @@ function EditStaffModal({ target, onClose, onDone }: EditStaffModalProps) {
     if (password) body.password = password;
 
     if (body.fullName === undefined && body.password === undefined) {
-      setLocalError('مافيش تغيير — عدّل الاسم أو اكتب كلمة مرور جديدة');
+      setLocalError('لا يوجد تغيير — عدّل الاسم أو اكتب كلمة مرور جديدة');
       return;
     }
 
@@ -804,7 +804,7 @@ function EditStaffModal({ target, onClose, onDone }: EditStaffModalProps) {
           />
         </Field>
 
-        <Field label="إعادة تعيين كلمة المرور" hint="سيبها فاضية لو مش عايز تغيّرها — ٦ أحرف على الأقل.">
+        <Field label="إعادة تعيين كلمة المرور" hint="اتركها فارغة إن لم ترد تغييرها — ٦ أحرف على الأقل.">
           <TextInput
             latin
             type="password"
@@ -926,7 +926,7 @@ function PermissionsModal({ target, onClose, onDone }: PermissionsModalProps) {
               {fullAccess ? 'صلاحية كاملة' : `${num(selected.length)} صلاحية`}
             </Pill>
             <span className="text-[12px] font-extrabold text-ink">
-              {fullAccess ? 'مسموح له بكل العمليات من غير قيد' : 'مقصور على المفاتيح المفتوحة تحت بس'}
+              {fullAccess ? 'مسموح له بكل العمليات من غير قيد' : 'مقصور على المفاتيح المفتوحة أدناه فقط'}
             </span>
           </div>
 
@@ -1104,10 +1104,10 @@ function AuditLog() {
         ) : rows.length === 0 ? (
           <EmptyState
             icon="🧾"
-            title={action ? 'مافيش عمليات في الفلتر ده' : 'لسه مافيش عمليات مسجّلة'}
+            title={action ? 'لا توجد عمليات في هذا الفلتر' : 'لا توجد عمليات مسجَّلة بعد'}
             description={
               action
-                ? 'شيل الفلتر أو اختر إجراء تاني من الشرائح فوق.'
+                ? 'أزل الفلتر أو اختر إجراءً آخر من الشرائح أعلاه.'
                 : 'أول ما يتعمل استرداد أو تسوية أو أي عملية مالية/حساب حسّاسة، هتتسجّل هنا تلقائياً.'
             }
           />

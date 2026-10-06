@@ -29,9 +29,9 @@ class LanguageScreen extends ConsumerWidget {
                   // /language بيتفتح بـ go من شاشة التعريف، فمفيش stack يرجع له.
                   QBackButton(onTap: () => context.go(QRoutes.intro)),
                   const SizedBox(height: 24),
-                  const Text('اختر لغتك', style: QText.display),
+                  Text('اختر لغتك', style: QText.display),
                   const SizedBox(height: 6),
-                  const Text('تقدر تغيّرها بعدين من الإعدادات', style: QText.caption),
+                  Text('تقدر تغيّرها بعدين من الإعدادات', style: QText.caption),
                   const SizedBox(height: 20),
                 ],
               ),

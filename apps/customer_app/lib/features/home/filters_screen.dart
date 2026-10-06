@@ -23,8 +23,8 @@ class FiltersScreen extends ConsumerWidget {
         trailing: InkWell(
           onTap: notifier.reset,
           borderRadius: BorderRadius.circular(QRadius.sm),
-          child: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             child: Text(
               'مسح',
               style: TextStyle(
@@ -113,7 +113,7 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label,
-      style: const TextStyle(
+      style: TextStyle(
         fontFamily: 'Cairo',
         fontSize: 12,
         fontWeight: FontWeight.w800,
@@ -138,7 +138,7 @@ class _SwitchRow extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Cairo',
               fontSize: 14,
               fontWeight: FontWeight.w700,

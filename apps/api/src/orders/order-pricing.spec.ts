@@ -11,7 +11,7 @@ describe('حساب فاتورة الطلب', () => {
     expect(r.commission.toNumber()).toBe(10); // 50 × 20% (على المجموع بس)
   });
 
-  it('العمولة على المجموع بس — مش على التوصيل', () => {
+  it('العمولة على المجموع فقط — لا على التوصيل', () => {
     // نفس المجموع، توصيل مختلف → نفس العمولة
     const a = computeOrderTotals({ subtotal: 100, discount: 0, deliveryFee: 5, vatPercent: 15, commissionRate: 20 });
     const b = computeOrderTotals({ subtotal: 100, discount: 0, deliveryFee: 25, vatPercent: 15, commissionRate: 20 });
@@ -41,7 +41,7 @@ describe('حساب فاتورة الطلب', () => {
     expect(r.commission.toFixed(2)).toBe('11.98'); // 59.90 × 20%
   });
 
-  it('كسور القروش بتفضل دقيقة (مافيش floating-point drift)', () => {
+  it('كسور الهللات تظل دقيقة (بلا floating-point drift)', () => {
     const r = computeOrderTotals({ subtotal: '33.33', discount: '0', deliveryFee: '11.11', vatPercent: '15', commissionRate: '17.5' });
     // (33.33 + 11.11) = 44.44 ؛ ضريبة = 6.666 ؛ إجمالي = 51.106
     expect(r.taxable.toFixed(2)).toBe('44.44');

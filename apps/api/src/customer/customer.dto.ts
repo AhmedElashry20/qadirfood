@@ -2,11 +2,13 @@ import {
   IsBoolean,
   IsEmail,
   IsEnum,
+  IsInt,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
   Max,
+  MaxLength,
   Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -213,4 +215,29 @@ export class ValidateCouponDto {
   @IsNumber({}, { message: 'قيمة الطلب غير صحيحة' })
   @Min(0)
   subtotal!: number;
+}
+
+/** POST /customer/loyalty/quote */
+export class QuoteRedemptionDto {
+  @ApiProperty({ example: 500, description: 'النقاط المطلوب استبدالها' })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  points!: number;
+
+  /** سقف الخصم بالريال — عادةً مجموع السلة ناقص خصم الكوبون. */
+  @ApiProperty({ example: 45.5 })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  maxDiscountSar!: number;
+}
+
+/** POST /customer/referral/apply */
+export class ApplyReferralDto {
+  @ApiProperty({ example: 'K7M2PQR' })
+  @IsString()
+  @IsNotEmpty({ message: 'رمز الإحالة مطلوب' })
+  @MaxLength(16)
+  code!: string;
 }

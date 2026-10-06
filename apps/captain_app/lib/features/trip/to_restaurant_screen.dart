@@ -53,12 +53,12 @@ class _ToRestaurantScreenState extends ConsumerState<ToRestaurantScreen> {
     final tripAsync = ref.watch(tripProvider(widget.orderId));
 
     return Scaffold(
-      backgroundColor: QColors.ink,
+      backgroundColor: QColors.inkSurface,
       body: tripAsync.when(
         loading: () => const QLoading(),
         error: (error, _) => SafeArea(
           child: QErrorView(
-            message: error is ApiException ? error.message : 'مش قادرين نجيب بيانات الرحلة',
+            message: error is ApiException ? error.message : 'تعذّر تحميل بيانات الرحلة',
             onRetry: () => ref.invalidate(tripProvider(widget.orderId)),
           ),
         ),
@@ -170,7 +170,7 @@ class _NavHeader extends StatelessWidget {
                     address,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Cairo',
                       fontSize: 12.5,
                       fontWeight: FontWeight.w600,
@@ -192,7 +192,7 @@ class _NavHeader extends StatelessWidget {
                     style: QText.num(size: 17, weight: FontWeight.w800, color: QColors.brand),
                   ),
                 ),
-                const Text(
+                Text(
                   'دقائق',
                   style: TextStyle(
                     fontFamily: 'Cairo',
@@ -221,9 +221,9 @@ class _PickupSheet extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(QSpace.screenH, 18, QSpace.screenH, 30),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: QColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(QRadius.sheet)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(QRadius.sheet)),
         boxShadow: kFloatShadow,
       ),
       child: Column(
@@ -254,7 +254,7 @@ class _PickupSheet extends StatelessWidget {
               _RoundAction(
                 emoji: '📞',
                 background: QColors.chip,
-                onTap: () => _snack(context, 'رقم المطعم مش متاح في الـ API'),
+                onTap: () => _snack(context, 'رقم المطعم غير متاح في الـ API'),
               ),
               const SizedBox(width: 8),
               _RoundAction(
@@ -308,7 +308,7 @@ void _snack(BuildContext context, String message) {
     ..hideCurrentSnackBar()
     ..showSnackBar(
       SnackBar(
-        backgroundColor: QColors.ink,
+        backgroundColor: QColors.inkSurface,
         content: Text(
           message,
           style: QText.body.copyWith(fontSize: 14, color: QColors.brand),

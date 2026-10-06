@@ -6,13 +6,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/api_client.dart';
+import '../../core/enums.dart';
 import '../../core/format.dart';
 import '../../core/router.dart';
 import '../../core/theme.dart';
 import '../../models/address.dart';
+import '../../models/loyalty.dart';
+import '../../models/order.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/checkout_provider.dart';
 import '../../providers/location_provider.dart';
+import '../../providers/loyalty_provider.dart';
 import '../../widgets/common.dart';
 import 'payment_method_screen.dart';
 import 'payment_webview_screen.dart';
@@ -30,17 +34,38 @@ class CheckoutScreen extends ConsumerWidget {
     final coupon = ref.watch(appliedCouponProvider);
     final slot = ref.watch(deliverySlotProvider);
     final drop = ref.watch(dropOffProvider);
+    final scheduledFor = ref.watch(scheduledForProvider);
+    // الإكرامية بتتصفّر بصرياً على الكاش — السيرفر بيرفضها، فعرضها بيوعد بحاجة
+    // مش هتحصل.
+    final tipAllowed = payment.type != PaymentType.cash;
+    final tip = tipAllowed ? ref.watch(tipProvider) : 0.0;
+
+    // ── نقاط الولاء ──
+    // السقف = المجموع ناقص خصم الكوبون: نفس القاعدة اللي في السيرفر، عشان
+    // الرقم المعروض يطابق اللي هيتخصم فعلاً.
+    final loyalty = ref.watch(loyaltyProvider).value ?? LoyaltySummary.empty;
+    final headroom = (bill.subtotal - bill.discount).clamp(0, double.infinity).toDouble();
+    final redeemRequested = ref.watch(redeemPointsProvider);
+    final quote = redeemRequested > 0
+        ? (ref.watch(redemptionQuoteProvider(headroom)).value ?? RedemptionQuote.zero)
+        : RedemptionQuote.zero;
 
     final minOrderMet = ref.watch(minOrderMetProvider);
     final isSubmitting = ref.watch(checkoutProvider).isLoading;
-    final canSubmit = address != null && !cart.isEmpty && minOrderMet && !isSubmitting;
+    // «جدولة» من غير وقت محدّد = طلب ناقص. بنقفل الزر بدل ما نبعته كطلب فوري
+    // والعميل يفتكر إنه جدوله.
+    final scheduleReady = slot != DeliverySlot.scheduled || scheduledFor != null;
+    final canSubmit =
+        address != null && !cart.isEmpty && minOrderMet && scheduleReady && !isSubmitting;
 
     // الحالات المقفولة بتقول للعميل السبب بدل ما يفضل يضغط على زر ميّت.
     final buttonLabel = isSubmitting
         ? 'جاري إرسال الطلب…'
         : (!cart.isEmpty && !minOrderMet)
             ? 'الحد الأدنى ${money(cart.minOrderTotal)} ر.س'
-            : 'تأكيد الطلب';
+            : !scheduleReady
+                ? 'اختر وقت التوصيل'
+                : 'تأكيد الطلب';
 
     final addressText = address == null
         ? 'اختر عنوان التوصيل'
@@ -67,7 +92,7 @@ class CheckoutScreen extends ConsumerWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('📍 التوصيل إلى', style: _cardTitle),
+                    Text('📍 التوصيل إلى', style: _cardTitle),
                     InkWell(
                       onTap: () => context.push(QRoutes.addresses),
                       child: Text(address == null ? 'إضافة' : 'تغيير', style: _goldLink),
@@ -111,7 +136,7 @@ class CheckoutScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('⏱ وقت التوصيل', style: _cardTitle),
+                Text('⏱ وقت التوصيل', style: _cardTitle),
                 const SizedBox(height: 10),
                 Row(
                   children: [
@@ -129,18 +154,177 @@ class CheckoutScreen extends ConsumerWidget {
                     Expanded(
                       child: _SlotBox(
                         title: 'جدولة',
-                        subtitle: 'اختر وقت',
+                        subtitle: scheduledFor == null
+                            ? 'اختر وقت'
+                            : scheduleLabel(scheduledFor),
                         selected: slot == DeliverySlot.scheduled,
-                        onTap: () =>
-                            ref.read(deliverySlotProvider.notifier).select(DeliverySlot.scheduled),
+                        onTap: () async {
+                          ref
+                              .read(deliverySlotProvider.notifier)
+                              .select(DeliverySlot.scheduled);
+                          await _pickSchedule(context, ref);
+                        },
                       ),
                     ),
                   ],
                 ),
+                if (slot == DeliverySlot.scheduled) ...[
+                  const SizedBox(height: 10),
+                  InkWell(
+                    onTap: () => _pickSchedule(context, ref),
+                    borderRadius: BorderRadius.circular(QRadius.sm),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                      decoration: BoxDecoration(
+                        color: QColors.tintSoft,
+                        borderRadius: BorderRadius.circular(QRadius.sm),
+                        border: Border.all(
+                          color: scheduledFor == null ? QColors.border : QColors.brand,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.event, size: 18, color: QColors.brand),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              scheduledFor == null
+                                  ? 'حدّد وقت التسليم'
+                                  : scheduleLabel(scheduledFor),
+                              style: TextStyle(
+                                fontFamily: 'Cairo',
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: QColors.ink,
+                              ),
+                            ),
+                          ),
+                          Text('تغيير', style: _goldLink),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'أقل وقت للجدولة بعد $kMinScheduleLeadMinutes دقيقة من الآن',
+                    style: TextStyle(
+                      fontFamily: 'Cairo',
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: QColors.label,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
           const SizedBox(height: 14),
+
+          // ── إكرامية المندوب ──
+          // بتروح ١٠٠٪ للمندوب — مافيش عليها ضريبة ولا عمولة منصة.
+          QCard(
+            padding: cardPadding,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('🤝 إكرامية المندوب', style: _cardTitle),
+                const SizedBox(height: 4),
+                Text(
+                  tipAllowed
+                      ? 'توصل للمندوب كاملة'
+                      : 'الإكرامية مع الدفع الإلكتروني — الدفع نقداً يُسلَّم للمندوب مباشرة',
+                  style: TextStyle(
+                    fontFamily: 'Cairo',
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    color: QColors.label,
+                  ),
+                ),
+                if (tipAllowed) ...[
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      for (final preset in kTipPresets) ...[
+                        Expanded(
+                          child: _TipChip(
+                            amount: preset,
+                            selected: tip == preset,
+                            onTap: () => ref.read(tipProvider.notifier).select(preset),
+                          ),
+                        ),
+                        if (preset != kTipPresets.last) const SizedBox(width: 8),
+                      ],
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // ── نقاط الولاء ──
+          // بتظهر بس لو البرنامج مفعّل والرصيد يكفّي الحد الأدنى — كارت بيقول
+          // «عندك ٣ نقاط» مالوش قيمة للعميل.
+          if (loyalty.canRedeem) ...[
+            QCard(
+              padding: cardPadding,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(child: Text('⭐ استبدال نقاطي', style: _cardTitle)),
+                      QSwitch(
+                        value: redeemRequested > 0,
+                        onChanged: (on) => ref
+                            .read(redeemPointsProvider.notifier)
+                            .select(on ? loyalty.points : 0),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'رصيدك ${loyalty.points} نقطة · تعادل ${ltr(money(loyalty.valueSar))} ر.س',
+                    style: TextStyle(
+                      fontFamily: 'Cairo',
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: QColors.label,
+                    ),
+                  ),
+                  if (redeemRequested > 0) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: QColors.tintSoft,
+                        borderRadius: BorderRadius.circular(QRadius.sm),
+                      ),
+                      child: Text(
+                        quote.points == 0
+                            // السقف أقل من الحد الأدنى للاستبدال — بنقول السبب
+                            // بدل ما المفتاح يبان شغّال والخصم صفر.
+                            ? 'قيمة الطلب الحالية لا تكفي لاستبدال نقاط'
+                            : 'ستُستخدم ${quote.points} نقطة — خصم '
+                                '${ltr(money(quote.discountSar))} ر.س',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: 'Cairo',
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: quote.points == 0 ? QColors.label : QColors.brand,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+          ],
 
           // ── الدفع ──
           QCard(
@@ -151,10 +335,10 @@ class CheckoutScreen extends ConsumerWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('💳 الدفع', style: _cardTitle),
+                    Text('💳 الدفع', style: _cardTitle),
                     InkWell(
                       onTap: () => context.push(QRoutes.paymentMethods),
-                      child: const Text('تغيير', style: _goldLink),
+                      child: Text('تغيير', style: _goldLink),
                     ),
                   ],
                 ),
@@ -166,7 +350,7 @@ class CheckoutScreen extends ConsumerWidget {
                     // مافيش بطاقات محفوظة في الـ API — الاسم بس.
                     Text(
                       payment.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Cairo',
                         fontSize: 13.5,
                         fontWeight: FontWeight.w800,
@@ -191,7 +375,7 @@ class CheckoutScreen extends ConsumerWidget {
                       Expanded(
                         child: Text.rich(
                           TextSpan(
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontFamily: 'Cairo',
                               fontSize: 13.5,
                               fontWeight: FontWeight.w800,
@@ -201,7 +385,7 @@ class CheckoutScreen extends ConsumerWidget {
                               const TextSpan(text: '🎟 كوبون: '),
                               TextSpan(
                                 text: coupon.code,
-                                style: const TextStyle(color: QColors.success),
+                                style: TextStyle(color: QColors.success),
                               ),
                               const TextSpan(text: ' مفعّل'),
                             ],
@@ -211,7 +395,7 @@ class CheckoutScreen extends ConsumerWidget {
                       // كوبون التوصيل المجاني بيصفّر رسوم التوصيل مش بيعمل خصم،
                       // فالمبلغ بيبقى صفر — نعرض «توصيل مجاني» بدل «-0».
                       if (coupon.freeDelivery)
-                        const Text(
+                        Text(
                           'توصيل مجاني',
                           style: TextStyle(
                             fontFamily: 'Cairo',
@@ -227,7 +411,7 @@ class CheckoutScreen extends ConsumerWidget {
                         ),
                     ],
                   )
-                : const Row(
+                : Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text('🎟 عندك كوبون؟', style: _cardTitle),
@@ -244,7 +428,7 @@ class CheckoutScreen extends ConsumerWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text(
                         'الإجمالي الفرعي + التوصيل + الضريبة',
                         style: TextStyle(
@@ -267,7 +451,7 @@ class CheckoutScreen extends ConsumerWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'خصم الكوبون',
                         style: TextStyle(
                           fontFamily: 'Cairo',
@@ -284,7 +468,7 @@ class CheckoutScreen extends ConsumerWidget {
                   ),
                 ] else if (coupon?.freeDelivery ?? false) ...[
                   const SizedBox(height: 10),
-                  const Row(
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
@@ -308,14 +492,53 @@ class CheckoutScreen extends ConsumerWidget {
                     ],
                   ),
                 ],
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
+                if (quote.discountSar > 0) ...[
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'خصم النقاط',
+                        style: TextStyle(
+                          fontFamily: 'Cairo',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: QColors.success,
+                        ),
+                      ),
+                      Text(
+                        ltr('-${money(quote.discountSar)}'),
+                        style: QText.num(size: 13, color: QColors.success),
+                      ),
+                    ],
+                  ),
+                ],
+                if (tip > 0) ...[
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'إكرامية المندوب',
+                        style: TextStyle(
+                          fontFamily: 'Cairo',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: QColors.label,
+                        ),
+                      ),
+                      QPrice(value: tip, size: 13, showCurrency: false),
+                    ],
+                  ),
+                ],
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                   child: Divider(color: QColors.line, height: 1),
                 ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'المطلوب دفعه',
                       style: TextStyle(
                         fontFamily: 'Cairo',
@@ -324,7 +547,13 @@ class CheckoutScreen extends ConsumerWidget {
                         color: QColors.ink,
                       ),
                     ),
-                    QPrice(value: bill.total, size: 16),
+                    // `bill.total` محسوب محلياً من غير خصم النقاط (اللي بيتحسب
+                    // على السيرفر)، والإكرامية برّه `order.total` أصلاً — فالرقم
+                    // المعروض بيجمع التلاتة عشان يطابق اللي هيتخصم فعلاً.
+                    QPrice(
+                      value: (bill.total - quote.discountSar).clamp(0, double.infinity) + tip,
+                      size: 16,
+                    ),
                   ],
                 ),
               ],
@@ -338,7 +567,7 @@ class CheckoutScreen extends ConsumerWidget {
           label: buttonLabel,
           enabled: canSubmit,
           leading: isSubmitting
-              ? const SizedBox(
+              ? SizedBox(
                   width: 18,
                   height: 18,
                   child: CircularProgressIndicator(strokeWidth: 2, color: QColors.brand),
@@ -382,7 +611,7 @@ class CheckoutScreen extends ConsumerWidget {
       _showError(context, e.message);
     } catch (_) {
       if (!context.mounted) return;
-      _showError(context, 'ما قدرناش نبعت الطلب — جرّب تاني');
+      _showError(context, 'تعذّر إرسال الطلب — حاول مرة أخرى');
     }
   }
 
@@ -403,7 +632,7 @@ void _showError(BuildContext context, String message) {
       SnackBar(
         content: Text(
           message,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Cairo',
             fontSize: 13.5,
             fontWeight: FontWeight.w800,
@@ -411,25 +640,96 @@ void _showError(BuildContext context, String message) {
           ),
         ),
         behavior: SnackBarBehavior.floating,
-        backgroundColor: QColors.ink,
+        backgroundColor: QColors.inkSurface,
         duration: const Duration(seconds: 3),
       ),
     );
 }
 
-const _cardTitle = TextStyle(
+final _cardTitle = TextStyle(
   fontFamily: 'Cairo',
   fontSize: 14,
   fontWeight: FontWeight.w800,
   color: QColors.ink,
 );
 
-const _goldLink = TextStyle(
+final _goldLink = TextStyle(
   fontFamily: 'Cairo',
   fontSize: 12.5,
   fontWeight: FontWeight.w700,
   color: QColors.gold,
 );
+
+/// منتقي وقت التسليم — تاريخ ثم ساعة.
+///
+/// بيفرض نفس حدود السيرفر (`scheduling.ts`): أقرب وقت = دلوقتي + المهلة الدنيا،
+/// وأقصى مدى = الأفق المسموح. لو العميل اختار وقت النهاردة أقرب من المهلة،
+/// بنرفعه لأقرب وقت مسموح بدل ما السيرفر يرفض الطلب كله بعد ما يضغط تأكيد.
+Future<void> _pickSchedule(BuildContext context, WidgetRef ref) async {
+  final earliest = ScheduledForNotifier.earliest();
+  final latest = ScheduledForNotifier.latest();
+  final current = ref.read(scheduledForProvider) ?? earliest;
+
+  final date = await showDatePicker(
+    context: context,
+    initialDate: current.isBefore(earliest) ? earliest : current,
+    firstDate: DateTime(earliest.year, earliest.month, earliest.day),
+    lastDate: latest,
+    helpText: 'يوم التسليم',
+  );
+  if (date == null || !context.mounted) return;
+
+  final time = await showTimePicker(
+    context: context,
+    initialTime: TimeOfDay.fromDateTime(current.isBefore(earliest) ? earliest : current),
+    helpText: 'وقت التسليم',
+  );
+  if (time == null) return;
+
+  var chosen = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+  // الترقية الصامتة لأقرب وقت مسموح: أرحم من رفض بعد الضغط على «تأكيد».
+  if (chosen.isBefore(earliest)) chosen = earliest;
+
+  ref.read(scheduledForProvider.notifier).select(chosen);
+}
+
+/// زر إكرامية جاهز — «بدون» للصفر.
+class _TipChip extends StatelessWidget {
+  const _TipChip({required this.amount, required this.selected, required this.onTap});
+
+  final double amount;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(QRadius.sm),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected ? QColors.tintSoft : QColors.surface,
+          borderRadius: BorderRadius.circular(QRadius.sm),
+          border: Border.all(
+            color: selected ? QColors.brand : QColors.border,
+            width: selected ? 2 : 1.5,
+          ),
+        ),
+        child: Text(
+          amount == 0 ? 'بدون' : ltr(money(amount)),
+          style: TextStyle(
+            fontFamily: 'Cairo',
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+            color: selected ? QColors.brand : QColors.ink,
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 /// مربع «أسرع وقت» / «جدولة».
 class _SlotBox extends StatelessWidget {
@@ -468,7 +768,7 @@ class _SlotBox extends StatelessWidget {
           children: [
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Cairo',
                 fontSize: 13.5,
                 fontWeight: FontWeight.w800,
@@ -487,7 +787,7 @@ class _SlotBox extends StatelessWidget {
             else
               Text(
                 subtitle,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Cairo',
                   fontSize: 11.5,
                   fontWeight: FontWeight.w600,
@@ -565,7 +865,7 @@ class _CouponSheetState extends ConsumerState<_CouponSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('🎟 أضف كوبون', style: QText.section),
+          Text('🎟 أضف كوبون', style: QText.section),
           const SizedBox(height: 14),
           QField(hint: 'اكتب كود الكوبون', controller: _controller),
           const SizedBox(height: 14),
@@ -573,7 +873,7 @@ class _CouponSheetState extends ConsumerState<_CouponSheet> {
             label: _applying ? 'جاري التحقق…' : 'تفعيل',
             enabled: !_applying,
             leading: _applying
-                ? const SizedBox(
+                ? SizedBox(
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(strokeWidth: 2, color: QColors.ink),

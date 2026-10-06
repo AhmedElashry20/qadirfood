@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -22,6 +23,7 @@ import { availableToWithdraw, withdrawalRejection, MIN_WITHDRAWAL } from './wall
 import { AuditService } from '../audit/audit.module';
 import { PrismaService } from '../prisma/prisma.service';
 import { FaceService } from '../face/face.service';
+import { RedisService } from '../redis/redis.service';
 import type { AuthUser } from '../common';
 import {
   ComplianceFilter,
@@ -270,6 +272,7 @@ export class CaptainsService {
     private readonly audit: AuditService,
     private readonly face: FaceService,
     private readonly config: ConfigService,
+    private readonly redis: RedisService,
   ) {}
 
   /**
@@ -278,7 +281,7 @@ export class CaptainsService {
    * وترجّع بيانات كباتن تانيين — فبنرفض الطلب صراحةً.
    */
   requireCaptainId(user: AuthUser): string {
-    if (!user.captainId) throw new ForbiddenException('الجلسة مش مربوطة بحساب كابتن');
+    if (!user.captainId) throw new ForbiddenException('الجلسة غير مرتبطة بحساب كابتن');
     return user.captainId;
   }
 
@@ -745,6 +748,94 @@ export class CaptainsService {
   // الأدمن — الكباتن
   // ────────────────────────────────────────────────────────────
 
+  /**
+   * إيقاف كابتن — منع فوري، مش علم تجميلي.
+   *
+   * التنفيذ على `user.isActive` عن قصد: ده الحقل اللي `JwtStrategy` بيفحصه في
+   * كل نداء، فتوكن الكابتن بيبطل من أول طلب بدل ما يفضل شغّال لحد ما ينتهي.
+   * ومعاه ٣ خطوات لازمة عشان الإيقاف يكون فعلي:
+   *   · `status = OFFLINE` — يخرج من فلتر التوزيع.
+   *   · حذف موقعه من Redis — يخرج من نتيجة «الأقرب» فوراً، وإلا يفضل ظاهر
+   *     كمرشّح لحد ما مفتاحه ينتهي بعد ٥ دقايق.
+   *   · سطر تدقيق بالسبب — إيقاف بلا سبب مسجّل مافيش منه مراجعة.
+   *
+   * كابتن في مهمة: بنرفض الإيقاف افتراضياً. `isActive = false` بيمنعه من
+   * نداءات الـ API، يعني مش هيقدر يأكّد التسليم — فالطلب بيتعلّق في إيد عميل.
+   * الأدمن يعيد إسناد الطلب الأول، أو يبعت `force` وياخد القرار.
+   */
+  async suspendCaptain(id: string, adminUserId: string, reason: string, force = false) {
+    const captain = await this.prisma.captain.findUnique({
+      where: { id },
+      include: { user: { select: { fullName: true, isActive: true } } },
+    });
+    if (!captain) throw new NotFoundException('الكابتن غير موجود');
+    if (!captain.user.isActive) throw new ConflictException('الكابتن موقوف بالفعل');
+
+    const activeOrder = await this.prisma.order.findFirst({
+      where: {
+        captainId: id,
+        status: {
+          in: [
+            OrderStatus.CAPTAIN_ASSIGNED,
+            OrderStatus.PICKED_UP,
+            OrderStatus.ON_THE_WAY,
+          ],
+        },
+      },
+      select: { orderNumber: true },
+    });
+    if (activeOrder && !force) {
+      throw new ConflictException(
+        `الكابتن في مهمة جارية (${activeOrder.orderNumber}) — أعد إسناد الطلب أولاً، أو أرسل force=true لإيقافه رغم ذلك.`,
+      );
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({ where: { id: captain.userId }, data: { isActive: false } });
+      await tx.captain.update({ where: { id }, data: { status: CaptainStatus.OFFLINE } });
+      await this.audit.record(
+        { userId: adminUserId, role: UserRole.ADMIN },
+        AuditAction.CAPTAIN_SUSPEND,
+        'captain',
+        id,
+        `إيقاف الكابتن ${captain.user.fullName} — ${reason}`,
+        { reason, forced: force, activeOrder: activeOrder?.orderNumber ?? null },
+        tx,
+      );
+    });
+
+    // برّه المعاملة: Redis مش جزء منها، ولو المعاملة رجعت مش عايزين موقع
+    // متحذوف لكابتن لسه شغّال.
+    await this.redis.removeCaptainLocation(id);
+
+    return { suspended: true, activeOrder: activeOrder?.orderNumber ?? null };
+  }
+
+  /** رفع الإيقاف — بيرجّع الدخول بس مايرجّعوش أونلاين؛ ده قراره من التطبيق. */
+  async reinstateCaptain(id: string, adminUserId: string) {
+    const captain = await this.prisma.captain.findUnique({
+      where: { id },
+      include: { user: { select: { fullName: true, isActive: true } } },
+    });
+    if (!captain) throw new NotFoundException('الكابتن غير موجود');
+    if (captain.user.isActive) throw new ConflictException('الكابتن غير موقوف');
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({ where: { id: captain.userId }, data: { isActive: true } });
+      await this.audit.record(
+        { userId: adminUserId, role: UserRole.ADMIN },
+        AuditAction.CAPTAIN_REINSTATE,
+        'captain',
+        id,
+        `رفع الإيقاف عن الكابتن ${captain.user.fullName}`,
+        undefined,
+        tx,
+      );
+    });
+
+    return { suspended: false };
+  }
+
   async listCaptains(query: ListCaptainsDto): Promise<Paginated<CaptainListItemView>> {
     const { page, pageSize, skip } = this.paging(query);
 
@@ -1071,26 +1162,70 @@ export class CaptainsService {
   // إضافة أجرة الرحلة للمحفظة — نقطة الوصل مع OrdersService
   // ────────────────────────────────────────────────────────────
 
-  /**
-   * بتزوّد رصيد الكابتن وبتكتب سطر TRIP_PAYOUT في نفس المعاملة.
-   *
-   * **متكررة الاستدعاء بأمان (idempotent)**: لو فيه سطر TRIP_PAYOUT للطلب ده
-   * خلاص، بترجّعه زي ما هو من غير ما تزوّد الرصيد تاني — عشان إعادة المحاولة
-   * أو تسليم مكرر ما يضاعفش فلوس الكابتن.
-   */
+  /** أجرة الرحلة — بتزوّد رصيد الكابتن وبتكتب سطر TRIP_PAYOUT في نفس المعاملة. */
   async creditTripPayout(captainId: string, orderId: string, amount: number): Promise<WalletTransactionView> {
-    // idempotency لكل **كابتن** على حدة — الطلب الواحد في التوصيل بالتناوب بيدفع
-    // لكابتنين (مركبة + مشي)، فالمفتاح لازم يشمل captainId وإلا التاني مايتدفعش.
-    const existing = await this.prisma.walletTransaction.findFirst({
-      where: { orderId, captainId, type: WalletEntryType.TRIP_PAYOUT },
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      select: { orderNumber: true },
     });
-    if (existing) return this.toTransactionView(existing);
+    if (!order) throw new NotFoundException('الطلب غير موجود');
+
+    return this.creditOrderEntry(
+      captainId,
+      orderId,
+      amount,
+      WalletEntryType.TRIP_PAYOUT,
+      `أجرة رحلة ${order.orderNumber}`,
+    );
+  }
+
+  /**
+   * إضافة إكرامية العميل لمحفظة المندوب.
+   *
+   * جدول `wallet_transactions` كان فيه نوع `TIP` من الأول ومافيش حاجة بتكتبه،
+   * فشاشة الأرباح كانت بتعرض «إكراميات: ٠» دايماً. دي الحاجة اللي بتكتبه.
+   *
+   * الإكرامية بتتقيّد كاملة للمندوب: مافيش عمولة منصة عليها ولا ضريبة.
+   */
+  async creditTip(captainId: string, orderId: string, amount: number): Promise<WalletTransactionView | null> {
+    if (amount <= 0) return null;
 
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
       select: { orderNumber: true },
     });
     if (!order) throw new NotFoundException('الطلب غير موجود');
+
+    return this.creditOrderEntry(
+      captainId,
+      orderId,
+      amount,
+      WalletEntryType.TIP,
+      `إكرامية على طلب ${order.orderNumber}`,
+    );
+  }
+
+  /**
+   * إضافة مبلغ لمحفظة الكابتن مع سطر في الدفتر — الأساس المشترك لأجرة الرحلة
+   * والإكرامية.
+   *
+   * **متكررة الاستدعاء بأمان (idempotent)** على (الطلب + الكابتن + النوع): لو
+   * السطر موجود خلاص، بترجّعه زي ما هو من غير ما تزوّد الرصيد تاني — عشان إعادة
+   * المحاولة أو تسليم مكرر ما يضاعفش فلوس الكابتن. المفتاح بيشمل `captainId`
+   * لأن الطلب الواحد في التسليم بالتناوب بيدفع لكابتنين (مركبة + مشي)، وبيشمل
+   * `type` عشان الإكرامية ماتتبلعش في فحص تكرار الأجرة.
+   */
+  private async creditOrderEntry(
+    captainId: string,
+    orderId: string,
+    amount: number,
+    type: WalletEntryType,
+    descriptionAr: string,
+  ): Promise<WalletTransactionView> {
+    const existing = await this.prisma.walletTransaction.findFirst({
+      where: { orderId, captainId, type },
+    });
+    if (existing) return this.toTransactionView(existing);
 
     const value = new Prisma.Decimal(amount.toFixed(2));
 
@@ -1102,7 +1237,7 @@ export class CaptainsService {
       await tx.$queryRaw`SELECT id FROM orders WHERE id = ${orderId} FOR UPDATE`;
 
       const duplicate = await tx.walletTransaction.findFirst({
-        where: { orderId, captainId, type: WalletEntryType.TRIP_PAYOUT },
+        where: { orderId, captainId, type },
       });
       if (duplicate) return this.toTransactionView(duplicate);
 
@@ -1115,10 +1250,10 @@ export class CaptainsService {
       const entry = await tx.walletTransaction.create({
         data: {
           captainId,
-          type: WalletEntryType.TRIP_PAYOUT,
+          type,
           amount: value,
           balanceAfter: captain.walletBalance,
-          descriptionAr: `أجرة رحلة ${order.orderNumber}`,
+          descriptionAr,
           orderId,
         },
       });

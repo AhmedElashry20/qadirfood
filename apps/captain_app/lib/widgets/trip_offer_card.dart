@@ -54,7 +54,7 @@ class QTripOfferCard extends StatelessWidget {
                 color: QColors.tintStrong,
                 borderRadius: BorderRadius.circular(QRadius.pill),
               ),
-              child: const Text(
+              child: Text(
                 'طلب جديد 🔔',
                 style: TextStyle(
                   fontFamily: 'Cairo',
@@ -84,7 +84,7 @@ class QTripOfferCard extends StatelessWidget {
                 children: [
                   Text(
                     '${offer.restaurantName} → ${offer.dropoffLabel}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Cairo',
                       fontSize: 19,
                       fontWeight: FontWeight.w900,
@@ -105,7 +105,7 @@ class QTripOfferCard extends StatelessWidget {
                   style: QText.num(size: 22, weight: FontWeight.w800, color: QColors.success),
                 ),
                 const SizedBox(height: 2),
-                const Text(
+                Text(
                   'ر.س أرباحك',
                   style: TextStyle(
                     fontFamily: 'Cairo',
@@ -198,7 +198,7 @@ class _SubLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const style = TextStyle(
+    final style = TextStyle(
       fontFamily: 'Cairo',
       fontSize: 12.5,
       fontWeight: FontWeight.w700,
@@ -258,7 +258,7 @@ class _RouteRail extends StatelessWidget {
           width: 11,
           height: 11,
           decoration: BoxDecoration(
-            color: QColors.ink,
+            color: QColors.inkSurface,
             borderRadius: BorderRadius.circular(3),
           ),
         ),
@@ -286,7 +286,7 @@ class _RouteLeg extends StatelessWidget {
           title,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Cairo',
             fontSize: 13.5,
             fontWeight: FontWeight.w800,
@@ -296,7 +296,7 @@ class _RouteLeg extends StatelessWidget {
         const SizedBox(height: 2),
         Text.rich(
           TextSpan(
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Cairo',
               fontSize: 11.5,
               fontWeight: FontWeight.w600,

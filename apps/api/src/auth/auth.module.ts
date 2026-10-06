@@ -42,10 +42,10 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       select: { isActive: true, role: true },
     });
 
-    if (!user) throw new UnauthorizedException('الحساب مش موجود');
+    if (!user) throw new UnauthorizedException('الحساب غير موجود');
     if (!user.isActive) throw new UnauthorizedException('الحساب موقوف — تواصل مع الدعم');
     // الدور اتغيّر بعد إصدار التوكن ⇒ التوكن مابيعبّرش عن صلاحياته الحالية.
-    if (user.role !== payload.role) throw new UnauthorizedException('صلاحيات الحساب اتغيّرت — سجّل دخول تاني');
+    if (user.role !== payload.role) throw new UnauthorizedException('تغيّرت صلاحيات الحساب — سجّل الدخول مرة أخرى');
 
     return payload;
   }

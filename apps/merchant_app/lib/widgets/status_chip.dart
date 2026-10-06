@@ -58,7 +58,7 @@ class QPrepTimerChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isReady) {
-      return const _TimerPill(bg: QColors.successTint, fg: QColors.success, text: '✓ جاهز');
+      return _TimerPill(bg: QColors.successTint, fg: QColors.success, text: '✓ جاهز');
     }
     if (isLate) {
       final (number, suffix) = _humanize(remainingMinutes.abs());

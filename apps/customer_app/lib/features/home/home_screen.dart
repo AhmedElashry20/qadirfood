@@ -78,11 +78,11 @@ void _snack(BuildContext context, String message) {
     ..hideCurrentSnackBar()
     ..showSnackBar(
       SnackBar(
-        backgroundColor: QColors.ink,
+        backgroundColor: QColors.inkSurface,
         behavior: SnackBarBehavior.floating,
         content: Text(
           message,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Cairo',
             fontSize: 13.5,
             fontWeight: FontWeight.w700,
@@ -99,8 +99,8 @@ class _Loading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 48),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 48),
       child: Center(child: CircularProgressIndicator(color: QColors.brand)),
     );
   }
@@ -116,7 +116,7 @@ class _ErrorView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final err = error;
-    final message = err is ApiException ? err.message : 'حصل خطأ';
+    final message = err is ApiException ? err.message : 'حدث خطأ';
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: QSpace.screenH, vertical: 24),
@@ -178,7 +178,7 @@ class _YellowHeader extends StatelessWidget {
                             addressTitle,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontFamily: 'Cairo',
                               fontSize: 16,
                               fontWeight: FontWeight.w800,
@@ -197,7 +197,7 @@ class _YellowHeader extends StatelessWidget {
                       width: 42,
                       height: 42,
                       alignment: Alignment.center,
-                      decoration: const BoxDecoration(color: QColors.ink, shape: BoxShape.circle),
+                      decoration: BoxDecoration(color: QColors.inkSurface, shape: BoxShape.circle),
                       child: Text(
                         initial,
                         style: QText.num(size: 17, weight: FontWeight.w800, color: QColors.brand),
@@ -217,10 +217,10 @@ class _YellowHeader extends StatelessWidget {
                     color: QColors.surface,
                     borderRadius: BorderRadius.circular(QRadius.md),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
                       Icon(Icons.search, size: 20, color: QColors.hint),
-                      SizedBox(width: 10),
+                      const SizedBox(width: 10),
                       Text(
                         'ابحث عن مطعم أو طبق…',
                         style: TextStyle(
@@ -285,7 +285,7 @@ class _ActiveOrderCard extends StatelessWidget {
                         subtitle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Cairo',
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -302,7 +302,7 @@ class _ActiveOrderCard extends StatelessWidget {
                     color: QColors.brand,
                     borderRadius: BorderRadius.circular(QRadius.pill),
                   ),
-                  child: const Text(
+                  child: Text(
                     'تتبع',
                     style: TextStyle(
                       fontFamily: 'Cairo',
@@ -332,13 +332,13 @@ class _PromoBanner extends StatelessWidget {
       height: 120,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(borderRadius: BorderRadius.circular(QRadius.xl)),
-      child: const Stack(
+      child: Stack(
         fit: StackFit.expand,
         children: [
-          QImage(
+          const QImage(
             url: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&q=70',
           ),
-          DecoratedBox(
+          const DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.bottomCenter,
@@ -350,7 +350,7 @@ class _PromoBanner extends StatelessWidget {
           Align(
             alignment: AlignmentDirectional.bottomStart,
             child: Padding(
-              padding: EdgeInsets.all(12),
+              padding: const EdgeInsets.all(12),
               child: Text(
                 'خصم 50% على البرجر 🔥',
                 style: TextStyle(
@@ -399,7 +399,7 @@ class _CategoriesStrip extends StatelessWidget {
                     c.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Cairo',
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -432,8 +432,8 @@ class _SectionHeader extends StatelessWidget {
           InkWell(
             onTap: () => context.go(QRoutes.search),
             borderRadius: BorderRadius.circular(QRadius.sm),
-            child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
               child: Text(
                 'عرض الكل',
                 style: TextStyle(
@@ -462,7 +462,7 @@ class _NearbyList extends StatelessWidget {
     if (restaurants.isEmpty) {
       return const Padding(
         padding: EdgeInsets.symmetric(horizontal: QSpace.screenH),
-        child: QEmpty(message: 'مافي مطاعم مطابقة للفلاتر', emoji: '🍽️'),
+        child: QEmpty(message: 'لا توجد مطاعم مطابقة للفلاتر', emoji: '🍽️'),
       );
     }
 
@@ -503,7 +503,7 @@ class _PlusBanner extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'جرّب Qadir Plus',
                   style: TextStyle(
                     fontFamily: 'Cairo',
@@ -515,7 +515,7 @@ class _PlusBanner extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text.rich(
                   TextSpan(
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Cairo',
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -546,8 +546,8 @@ class _PlusBanner extends StatelessWidget {
               // الاشتراك مش موجود في الـ API لسه.
               onTap: () => _snack(context, 'قريباً'),
               borderRadius: BorderRadius.circular(QRadius.sm),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Text(
                   'اشترك',
                   style: TextStyle(

@@ -156,7 +156,7 @@ class _AddressEditorScreenState extends ConsumerState<AddressEditorScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _saving = false);
-      _showError(context, 'ما قدرناش نحفظ العنوان — جرّب تاني');
+      _showError(context, 'تعذّر حفظ العنوان — حاول مرة أخرى');
     }
   }
 
@@ -167,7 +167,7 @@ class _AddressEditorScreenState extends ConsumerState<AddressEditorScreen> {
         SnackBar(
           content: Text(
             message,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Cairo',
               fontSize: 13.5,
               fontWeight: FontWeight.w800,
@@ -175,7 +175,7 @@ class _AddressEditorScreenState extends ConsumerState<AddressEditorScreen> {
             ),
           ),
           behavior: SnackBarBehavior.floating,
-          backgroundColor: QColors.ink,
+          backgroundColor: QColors.inkSurface,
           duration: const Duration(seconds: 3),
         ),
       );
@@ -256,7 +256,7 @@ class _AddressEditorScreenState extends ConsumerState<AddressEditorScreen> {
 
           Row(
             children: [
-              const Text(
+              Text(
                 'تعيين كعنوان افتراضي',
                 style: TextStyle(
                   fontFamily: 'Cairo',
@@ -279,7 +279,7 @@ class _AddressEditorScreenState extends ConsumerState<AddressEditorScreen> {
           label: _saving ? 'جاري الحفظ…' : 'حفظ العنوان',
           enabled: !_saving,
           leading: _saving
-              ? const SizedBox(
+              ? SizedBox(
                   width: 18,
                   height: 18,
                   child: CircularProgressIndicator(strokeWidth: 2, color: QColors.ink),

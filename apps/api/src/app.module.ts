@@ -10,6 +10,7 @@ import { MenuModule } from './menu/menu.module';
 import { RestaurantsModule } from './restaurants/restaurants.module';
 import { CustomerModule } from './customer/customer.module';
 import { DispatchModule } from './dispatch/dispatch.module';
+import { RoutingModule } from './routing/routing.module';
 import { TrackingModule } from './tracking/tracking.module';
 import { ReportsModule } from './reports/reports.module';
 import { CaptainsModule } from './captains/captains.module';
@@ -46,6 +47,7 @@ import { HealthController } from './health.controller';
     RestaurantsModule,
     CustomerModule,
     DispatchModule,
+    RoutingModule,
     TrackingModule,
     ReportsModule,
     CaptainsModule,

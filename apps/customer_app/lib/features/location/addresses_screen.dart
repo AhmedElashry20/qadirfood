@@ -23,16 +23,16 @@ class AddressesScreen extends ConsumerWidget {
       backgroundColor: QColors.canvas,
       appBar: const QHeader(title: 'عناويني'),
       body: addresses.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: QColors.ink)),
+        loading: () => Center(child: CircularProgressIndicator(color: QColors.ink)),
         error: (error, _) => _ErrorState(
-          message: error is ApiException ? error.message : 'ما قدرناش نجيب عناوينك',
+          message: error is ApiException ? error.message : 'تعذّر تحميل عناوينك',
           onRetry: () => ref.invalidate(addressesProvider),
         ),
         data: (list) {
           if (list.isEmpty) {
             return const Padding(
               padding: EdgeInsets.all(QSpace.screenH),
-              child: QEmpty(message: 'مافيش عناوين — أضف عنوانك الأول', emoji: '📍'),
+              child: QEmpty(message: 'لا توجد عناوين — أضف عنوانك الأول', emoji: '📍'),
             );
           }
 
@@ -103,7 +103,7 @@ class _AddressCard extends ConsumerWidget {
                         a.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Cairo',
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
@@ -119,7 +119,7 @@ class _AddressCard extends ConsumerWidget {
                           color: QColors.brand,
                           borderRadius: BorderRadius.circular(QRadius.pill),
                         ),
-                        child: const Text(
+                        child: Text(
                           'الافتراضي',
                           style: TextStyle(
                             fontFamily: 'Cairo',
@@ -137,7 +137,7 @@ class _AddressCard extends ConsumerWidget {
                   a.details,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Cairo',
                     fontSize: 12.5,
                     fontWeight: FontWeight.w600,
@@ -148,7 +148,7 @@ class _AddressCard extends ConsumerWidget {
             ),
           ),
           PopupMenuButton<_AddressAction>(
-            icon: const Icon(Icons.more_vert, color: QColors.hint),
+            icon: Icon(Icons.more_vert, color: QColors.hint),
             color: QColors.surface,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(QRadius.md),
@@ -168,7 +168,7 @@ class _AddressCard extends ConsumerWidget {
               }
             },
             itemBuilder: (_) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: _AddressAction.makeDefault,
                 child: Text(
                   'تعيين كافتراضي',
@@ -180,7 +180,7 @@ class _AddressCard extends ConsumerWidget {
                   ),
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: _AddressAction.edit,
                 child: Text(
                   'تعديل',
@@ -193,7 +193,7 @@ class _AddressCard extends ConsumerWidget {
                 ),
               ),
               if (canDelete)
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: _AddressAction.remove,
                   child: Text(
                     'حذف',
@@ -221,7 +221,7 @@ class _AddressCard extends ConsumerWidget {
       _showError(context, e.message);
     } catch (_) {
       if (!context.mounted) return;
-      _showError(context, 'ما قدرناش نكمّل العملية — جرّب تاني');
+      _showError(context, 'تعذّر إكمال العملية — حاول مرة أخرى');
     }
   }
 }
@@ -234,7 +234,7 @@ void _showError(BuildContext context, String message) {
       SnackBar(
         content: Text(
           message,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Cairo',
             fontSize: 13.5,
             fontWeight: FontWeight.w800,
@@ -242,7 +242,7 @@ void _showError(BuildContext context, String message) {
           ),
         ),
         behavior: SnackBarBehavior.floating,
-        backgroundColor: QColors.ink,
+        backgroundColor: QColors.inkSurface,
         duration: const Duration(seconds: 3),
       ),
     );
@@ -265,7 +265,7 @@ class _ErrorState extends StatelessWidget {
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Cairo',
               fontSize: 14,
               fontWeight: FontWeight.w700,

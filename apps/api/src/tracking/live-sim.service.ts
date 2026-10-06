@@ -51,7 +51,7 @@ export class LiveSimService implements OnModuleInit, OnModuleDestroy {
     }
 
     if (!this.positions.size) {
-      this.logger.warn('LIVE_SIM شغّال بس مفيش كباتن أونلاين بمواقع — مفيش حركة');
+      this.logger.warn('LIVE_SIM يعمل لكن لا يوجد كباتن متصلون بمواقع — لا حركة');
       return;
     }
 

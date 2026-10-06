@@ -56,7 +56,7 @@ class _DeliveryConfirmScreenState extends ConsumerState<DeliveryConfirmScreen> {
     try {
       picked = await ImagePicker().pickImage(source: ImageSource.camera, maxWidth: 1400, imageQuality: 80);
     } catch (_) {
-      if (mounted) _snack(context, 'مش قادرين نفتح الكاميرا');
+      if (mounted) _snack(context, 'تعذّر فتح الكاميرا');
       return;
     }
     if (picked == null || !mounted) return;
@@ -74,7 +74,7 @@ class _DeliveryConfirmScreenState extends ConsumerState<DeliveryConfirmScreen> {
   Future<void> _confirmDelivery(CaptainTrip trip) async {
     final code = _codeCtrl.text.trim();
     if (code.isEmpty) {
-      _snack(context, 'أدخل كود التسليم اللي مع العميل');
+      _snack(context, 'أدخل رمز التسليم الذي مع العميل');
       return;
     }
     if (_photoUrl == null) {
@@ -100,7 +100,7 @@ class _DeliveryConfirmScreenState extends ConsumerState<DeliveryConfirmScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _submitting = false);
-      _snack(context, 'مش قادرين نأكّد التسليم — جرّب تاني');
+      _snack(context, 'تعذّر تأكيد التسليم — حاول مرة أخرى');
     }
   }
 
@@ -153,7 +153,7 @@ class _DeliveryConfirmScreenState extends ConsumerState<DeliveryConfirmScreen> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.camera_alt_outlined, size: 30, color: QColors.label),
+                              Icon(Icons.camera_alt_outlined, size: 30, color: QColors.label),
                               const SizedBox(height: 6),
                               Text('صوّر إثبات التسليم', style: QText.tiny.copyWith(color: QColors.label)),
                             ],
@@ -171,12 +171,12 @@ class _DeliveryConfirmScreenState extends ConsumerState<DeliveryConfirmScreen> {
     final tripAsync = ref.watch(tripProvider(widget.orderId));
 
     return tripAsync.when(
-      loading: () => const Scaffold(backgroundColor: QColors.canvas, body: QLoading()),
+      loading: () => Scaffold(backgroundColor: QColors.canvas, body: const QLoading()),
       error: (error, _) => Scaffold(
         backgroundColor: QColors.canvas,
         appBar: const QHeader(title: 'تأكيد التسليم'),
         body: QErrorView(
-          message: error is ApiException ? error.message : 'مش قادرين نجيب بيانات الطلب',
+          message: error is ApiException ? error.message : 'تعذّر تحميل بيانات الطلب',
           onRetry: () => ref.invalidate(tripProvider(widget.orderId)),
         ),
       ),
@@ -260,7 +260,7 @@ class _ProofSection extends StatelessWidget {
               TextSpan(
                 children: [
                   const TextSpan(
-                      text: 'إثبات التسليم (رمز OTP أو صورة) لسه مش مدعوم في الـ API — '),
+                      text: 'إثبات التسليم (رمز OTP أو صورة) غير مدعوم في الـ API بعد — '),
                   TextSpan(
                     text: fmt.ltr('PATCH /orders/:id/delivered'),
                     style: QText.num(size: 12, weight: FontWeight.w700, color: QColors.goldDeep),
@@ -268,7 +268,7 @@ class _ProofSection extends StatelessWidget {
                   const TextSpan(text: ' مابياخدش body'),
                 ],
               ),
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Cairo',
                 fontSize: 12.5,
                 fontWeight: FontWeight.w700,
@@ -353,7 +353,7 @@ class _OrderSummaryCard extends StatelessWidget {
           Text('ملخص الطلب', style: QText.section.copyWith(fontSize: 14)),
           const SizedBox(height: 10),
           if (trip.items.isEmpty)
-            Text('مافيش أصناف في الطلب', style: QText.tiny.copyWith(color: QColors.faint))
+            Text('لا توجد أصناف في الطلب', style: QText.tiny.copyWith(color: QColors.faint))
           else
             for (final item in trip.items) ...[
               Padding(
@@ -385,7 +385,7 @@ class _OrderSummaryCard extends StatelessWidget {
                 ),
               ),
             ],
-          const Divider(color: QColors.line, height: 20),
+          Divider(color: QColors.line, height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -412,7 +412,7 @@ void _snack(BuildContext context, String message) {
     ..hideCurrentSnackBar()
     ..showSnackBar(
       SnackBar(
-        backgroundColor: QColors.ink,
+        backgroundColor: QColors.inkSurface,
         content: Text(
           message,
           style: QText.body.copyWith(fontSize: 14, color: QColors.brand),

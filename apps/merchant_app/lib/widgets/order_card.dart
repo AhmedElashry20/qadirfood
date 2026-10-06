@@ -18,7 +18,7 @@ void showQSnack(BuildContext context, String message) {
     ..hideCurrentSnackBar()
     ..showSnackBar(
       SnackBar(
-        backgroundColor: QColors.ink,
+        backgroundColor: QColors.inkSurface,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 3),
         content: Text(
@@ -74,7 +74,7 @@ class QPrepTimeChips extends StatelessWidget {
     return Row(
       children: [
         if (showLabel) ...[
-          const Text('وقت التحضير:', style: QText.tiny),
+          Text('وقت التحضير:', style: QText.tiny),
           const SizedBox(width: 8),
         ],
         for (final minutes in kPrepTimeOptions) ...[
@@ -86,7 +86,7 @@ class QPrepTimeChips extends StatelessWidget {
           const SizedBox(width: 6),
         ],
         const SizedBox(width: 2),
-        const Text(
+        Text(
           'دقيقة',
           style: TextStyle(
             fontFamily: 'Cairo',
@@ -202,7 +202,7 @@ class _QIncomingOrderCardState extends State<QIncomingOrderCard> {
                   children: [
                     Row(
                       children: [
-                        const Text(
+                        Text(
                           'طلب جديد ',
                           style: TextStyle(
                             fontFamily: 'Cairo',
@@ -298,7 +298,7 @@ class _ItemsBlock extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               '📝 ${order.customerNotes!.trim()}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Cairo',
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
@@ -426,7 +426,7 @@ class _QActiveOrderCardState extends State<QActiveOrderCard> {
                         ' · ${order.customerName}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Cairo',
                           fontSize: 15,
                           fontWeight: FontWeight.w900,
@@ -544,7 +544,7 @@ class QHistoryOrderRow extends StatelessWidget {
                         ' · ${order.customerName} · ${order.channel.ar}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Cairo',
                           fontSize: 14,
                           fontWeight: FontWeight.w800,

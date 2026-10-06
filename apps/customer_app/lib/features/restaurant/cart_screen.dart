@@ -118,7 +118,7 @@ class _CartLineCard extends StatelessWidget {
                   line.item.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Cairo',
                     fontSize: 14.5,
                     fontWeight: FontWeight.w800,
@@ -188,7 +188,7 @@ class _MinOrderStrip extends StatelessWidget {
           ],
         ),
         textAlign: TextAlign.center,
-        style: const TextStyle(
+        style: TextStyle(
           fontFamily: 'Cairo',
           fontSize: 13.5,
           fontWeight: FontWeight.w800,
@@ -217,7 +217,7 @@ class _CouponStrip extends StatelessWidget {
           borderRadius: BorderRadius.circular(QRadius.md),
           border: Border.all(color: QColors.brandDeep, width: 1.5),
         ),
-        child: const Row(
+        child: Row(
           children: [
             Expanded(
               child: Text(
@@ -260,7 +260,7 @@ class _AppliedCouponStrip extends StatelessWidget {
           Expanded(
             child: Text(
               '🎟 $code مفعّل',
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Cairo',
                 fontSize: 13.5,
                 fontWeight: FontWeight.w800,
@@ -270,7 +270,7 @@ class _AppliedCouponStrip extends StatelessWidget {
           ),
           TextButton(
             onPressed: onRemove,
-            child: const Text(
+            child: Text(
               'إزالة',
               style: TextStyle(
                 fontFamily: 'Cairo',
@@ -320,7 +320,7 @@ class _CouponSheetState extends ConsumerState<_CouponSheet> {
     } catch (_) {
       if (!context.mounted) return;
       setState(() => _applying = false);
-      _error('حصل خطأ');
+      _error('حدث خطأ');
     }
   }
 
@@ -358,7 +358,7 @@ class _CouponSheetState extends ConsumerState<_CouponSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('كوبون الخصم', style: QText.section),
+          Text('كوبون الخصم', style: QText.section),
           const SizedBox(height: 14),
           QField(
             hint: 'اكتب كود الكوبون',
@@ -371,7 +371,7 @@ class _CouponSheetState extends ConsumerState<_CouponSheet> {
             enabled: !_applying,
             onPressed: _applying ? null : _apply,
             trailing: _applying
-                ? const SizedBox(
+                ? SizedBox(
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(strokeWidth: 2, color: QColors.ink),
@@ -384,7 +384,7 @@ class _CouponSheetState extends ConsumerState<_CouponSheet> {
   }
 }
 
-/// السلة فاضية.
+/// السلة فارغة.
 class _Empty extends StatelessWidget {
   const _Empty({required this.onBrowse});
 
@@ -400,9 +400,9 @@ class _Empty extends StatelessWidget {
           children: [
             const Text('🛒', style: TextStyle(fontSize: 56)),
             const SizedBox(height: 14),
-            const Text('سلتك فاضية', style: QText.section),
+            Text('سلتك فارغة', style: QText.section),
             const SizedBox(height: 6),
-            const Text('اختر مطعم وابدأ اطلب', style: QText.caption),
+            Text('اختر مطعم وابدأ اطلب', style: QText.caption),
             const SizedBox(height: 20),
             SizedBox(
               width: 200,

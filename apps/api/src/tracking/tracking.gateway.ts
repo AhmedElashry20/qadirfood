@@ -35,6 +35,7 @@ const EV = {
   TICKET_NEW: 'ticket:new',
   TICKET_MESSAGE: 'ticket:message',
   TICKET_UPDATED: 'ticket:updated',
+  ORDER_MESSAGE: 'order:message',
   ERROR: 'error',
 } as const;
 
@@ -347,10 +348,22 @@ export class TrackingGateway implements OnGatewayConnection, OnGatewayDisconnect
         : undefined,
     };
 
-    this.server.to(`order:${order.id}`).emit(EV.ORDER_STATUS_CHANGED, payload);
-    this.server.to(`customer:${order.customerId}`).emit(EV.ORDER_STATUS_CHANGED, payload);
-    this.server.to(`branch:${order.branchId}`).emit(EV.ORDER_STATUS_CHANGED, payload);
-    this.server.to('admin').emit(EV.ORDER_STATUS_CHANGED, payload);
+    // المندوب لازم يكون في القائمة: هو مابيتحطّش في غرفة `order:{id}` خالص،
+    // فكان بيعرف تغيّر حالة الطلب بإعادة تحميل الشاشة بعد كل عملية بس — يعني
+    // إلغاء من العميل مايوصلهوش لحد ما يعمل refresh وهو ماشي للمطعم.
+    const captainRooms = [order.captainId, order.footCaptainId]
+      .filter(Boolean)
+      .map((id: string) => `captain:${id}`);
+
+    this.server
+      .to([
+        `order:${order.id}`,
+        `customer:${order.customerId}`,
+        `branch:${order.branchId}`,
+        ...captainRooms,
+        'admin',
+      ])
+      .emit(EV.ORDER_STATUS_CHANGED, payload);
   }
 
   emitTripOffer(captainId: string, offer: unknown) {
@@ -400,6 +413,26 @@ export class TrackingGateway implements OnGatewayConnection, OnGatewayDisconnect
     this.server.to(`ticket:${ticketId}`).emit(EV.TICKET_MESSAGE, message);
     this.server.to(`customer:${customerId}`).emit(EV.TICKET_MESSAGE, message);
     this.server.to('admin').emit(EV.TICKET_MESSAGE, message);
+  }
+
+  /**
+   * رسالة جديدة في محادثة الطلب — للعميل وللمندوب (الاتنين في التناوب) وللأدمن.
+   *
+   * بنبعت لغرف الأطراف بالاسم مش لغرفة `order:{id}` لوحدها: المندوب مش
+   * بيتحط في غرفة الطلب أصلاً، فالاعتماد عليها كان هيخلّي رسايل العميل
+   * ماتوصلهوش.
+   */
+  emitOrderMessage(
+    targets: { customerId: string; captainIds: string[]; orderId: string },
+    message: unknown,
+  ) {
+    const rooms = [
+      `order:${targets.orderId}`,
+      `customer:${targets.customerId}`,
+      ...targets.captainIds.map((id) => `captain:${id}`),
+      'admin',
+    ];
+    this.server.to(rooms).emit(EV.ORDER_MESSAGE, message);
   }
 
   /** تغيّرت حالة/إسناد التذكرة — تحديث اللوحة والعميل. */

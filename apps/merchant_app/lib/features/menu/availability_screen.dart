@@ -65,7 +65,7 @@ class _DisableItemSheetState extends State<_DisableItemSheet> {
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          backgroundColor: QColors.ink,
+          backgroundColor: QColors.inkSurface,
           content: Text(message, style: QText.body.copyWith(color: QColors.brand)),
         ),
       );
@@ -109,7 +109,7 @@ class _DisableItemSheetState extends State<_DisableItemSheet> {
             const SizedBox(height: 22),
             Text(
               'إيقاف "${widget.item.nameAr}"؟',
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Cairo',
                 fontSize: 18,
                 fontWeight: FontWeight.w900,
@@ -117,7 +117,7 @@ class _DisableItemSheetState extends State<_DisableItemSheet> {
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'الصنف هيختفي من تطبيق العملاء فوراً. متى يرجع؟',
               style: TextStyle(
                 fontFamily: 'Cairo',
@@ -191,7 +191,7 @@ class _DisableItemSheetState extends State<_DisableItemSheet> {
             if (choice.note != null)
               Text(
                 choice.note!,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Cairo',
                   fontSize: 12,
                   fontWeight: FontWeight.w600,

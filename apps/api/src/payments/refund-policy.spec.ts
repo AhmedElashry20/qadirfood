@@ -38,3 +38,17 @@ describe('سياسة العمولة على الاسترداد', () => {
     expect(r.decimalPlaces()).toBeLessThanOrEqual(2);
   });
 });
+
+describe('سقف نسبة العمولة المرتجعة', () => {
+  it('استرداد أكبر من إجمالي الطلب (لأن المدفوع يشمل إكرامية) مايرجّعش عمولة أكبر من الأصل', () => {
+    const order = { total: '100', commission: '20' };
+    // العميل دفع ١٢٠ (١٠٠ فاتورة + ٢٠ إكرامية) واترد له الكل.
+    const reversed = commissionToReverse(order, '120', RefundLiability.NONE);
+    expect(reversed.toNumber()).toBe(20);
+  });
+
+  it('الاسترداد الكامل بالظبط بيرجّع العمولة كلها', () => {
+    const order = { total: '100', commission: '20' };
+    expect(commissionToReverse(order, '100', RefundLiability.NONE).toNumber()).toBe(20);
+  });
+});

@@ -137,9 +137,9 @@ const REFUND_STATUS_META: Record<RefundStatus, RefundStatusMeta> = {
   COMPLETED: { label: 'تم الاسترداد', tone: 'ok' },
   FAILED: { label: 'فشل الاسترداد', tone: 'bad' },
   AWAITING_APPROVAL: {
-    label: 'بانتظار موافقة أدمن تاني',
+    label: 'بانتظار موافقة مسؤول آخر',
     tone: 'warn',
-    note: 'استرداد فوق الحد — محجوز ومايتنفّذش لحد ما أدمن **تاني** يوافق عليه (فصل مهام).',
+    note: 'استرداد فوق الحد — محجوز ولا يُنفَّذ حتى يوافق عليه مسؤول **آخر** (فصل المهام).',
   },
   REJECTED: { label: 'مرفوضة الموافقة', tone: 'bad' },
 };
@@ -200,7 +200,7 @@ export const REFUND_LIABILITY_META: Record<RefundLiability, RefundLiabilityMeta>
   NONE: {
     label: REFUND_LIABILITY_AR.NONE,
     tone: 'neutral',
-    note: 'البيع ماتمّش أصلاً (إلغاء قبل التحضير). مافيش طرف غلطان، والعمولة بترجع للمطعم بالتناسب.',
+    note: 'لم يتم البيع أساساً (إلغاء قبل التحضير). لا طرف مخطئ، والعمولة ترجع للمطعم بالتناسب.',
   },
   RESTAURANT: {
     label: REFUND_LIABILITY_AR.RESTAURANT,
@@ -249,10 +249,10 @@ export function previewCommissionReversed(
  */
 export function providerNote(provider: string): string | null {
   if (provider === 'sandbox') {
-    return 'بوابة sandbox — عملية وهمية للتطوير. المرجع ده مالوش وجود عند أي مزوّد ومافيش فلوس اتحركت فعلاً.';
+    return 'بوابة تجريبية — عملية صورية للتطوير. هذا المرجع لا وجود له عند أي مزوّد ولم تتحرك أي مبالغ فعلاً.';
   }
   if (provider === 'cash') {
-    return 'كاش — مافيش بوابة أصلاً. التحصيل بيحصل عند الباب والاسترداد بيتم بالإيد في التسوية.';
+    return 'نقداً — لا توجد بوابة أساساً. التحصيل يحدث عند الباب والاسترداد يتم يدوياً في التسوية.';
   }
   return null;
 }

@@ -66,7 +66,7 @@ class EarningsScreen extends ConsumerWidget {
                       child: QLoading(),
                     ),
                     error: (error, _) => QErrorView(
-                      message: error is ApiException ? error.message : 'مش قادرين نجيب الأرباح',
+                      message: error is ApiException ? error.message : 'تعذّر تحميل الأرباح',
                       onRetry: () => ref.invalidate(earningsByRangeProvider),
                     ),
                     data: (summary) => Column(
@@ -121,9 +121,9 @@ class _Hero extends ConsumerWidget {
 
     return Container(
       width: double.infinity,
-      decoration: const BoxDecoration(
-        color: QColors.ink,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
+      decoration: BoxDecoration(
+        color: QColors.inkSurface,
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
       ),
       child: SafeArea(
         bottom: false,
@@ -144,7 +144,7 @@ class _Hero extends ConsumerWidget {
               if (isCompany)
                 _CompanyEarningsBanner(companyName: captain!.companyName!)
               else ...[
-                const Text(
+                Text(
                   'رصيدك القابل للسحب',
                   style: TextStyle(
                     fontFamily: 'Cairo',
@@ -162,10 +162,10 @@ class _Hero extends ConsumerWidget {
                   ),
                 ),
                 error: (error, _) => Text(
-                  error is ApiException ? error.message : 'مش قادرين نجيب الرصيد',
+                  error is ApiException ? error.message : 'تعذّر تحميل الرصيد',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Cairo',
                     fontSize: 12.5,
                     fontWeight: FontWeight.w700,
@@ -189,7 +189,7 @@ class _Hero extends ConsumerWidget {
                             const TextSpan(text: ' ر.س تحت المراجعة'),
                           ],
                         ),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Cairo',
                           fontSize: 11.5,
                           fontWeight: FontWeight.w600,
@@ -227,8 +227,8 @@ class _Hero extends ConsumerWidget {
                 Text(
                   wallet.hasPayoutMethods
                       ? 'أقل مبلغ للسحب ${fmt.ltr(fmt.money(Wallet.minWithdrawal))} ر.س'
-                      : 'ضيف حساب استلام من المحفظة عشان تقدر تسحب',
-                  style: const TextStyle(
+                      : 'أضف حساب استلام من المحفظة لتتمكّن من السحب',
+                  style: TextStyle(
                     fontFamily: 'Cairo',
                     fontSize: 11.5,
                     fontWeight: FontWeight.w600,
@@ -320,7 +320,7 @@ class _WithdrawalSheetState extends ConsumerState<_WithdrawalSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('طلب سحب', style: QText.section),
+              Text('طلب سحب', style: QText.section),
               const SizedBox(height: 4),
               Text.rich(
                 TextSpan(
@@ -386,7 +386,7 @@ class _WithdrawalSheetState extends ConsumerState<_WithdrawalSheet> {
               ),
               const SizedBox(height: 8),
               Text(
-                'المبلغ بيتحجز من رصيدك دلوقتي وبيتحوّل بعد موافقة الإدارة',
+                'يُحجز المبلغ من رصيدك الآن ويُحوَّل بعد موافقة الإدارة',
                 textAlign: TextAlign.center,
                 style: QText.tiny.copyWith(color: QColors.faint, fontWeight: FontWeight.w600),
               ),
@@ -443,7 +443,7 @@ class _CompanyEarningsBanner extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'أرباحك عن طريق',
           style: TextStyle(
             fontFamily: 'Cairo',
@@ -455,7 +455,7 @@ class _CompanyEarningsBanner extends ConsumerWidget {
         const SizedBox(height: 4),
         Text(
           companyName,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Cairo',
             fontSize: 22,
             fontWeight: FontWeight.w900,
@@ -463,8 +463,8 @@ class _CompanyEarningsBanner extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
-          'شركتك هي اللي بتدفعلك مش المنصة — عشان كده مافيش رصيد ولا سحب هنا.',
+        Text(
+          'شركتك هي التي تدفع لك، لا المنصة — لذلك لا يوجد رصيد ولا سحب هنا.',
           style: TextStyle(
             fontFamily: 'Cairo',
             fontSize: 11.5,
@@ -479,10 +479,10 @@ class _CompanyEarningsBanner extends ConsumerWidget {
             child: Text('…', style: QText.num(size: 22, color: QColors.darkSub)),
           ),
           error: (error, _) => Text(
-            error is ApiException ? error.message : 'مش قادرين نجيب التوزيعات',
+            error is ApiException ? error.message : 'تعذّر تحميل التوزيعات',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Cairo',
               fontSize: 12.5,
               fontWeight: FontWeight.w700,
@@ -538,7 +538,7 @@ class _CompanyStat extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Cairo',
             fontSize: 11.5,
             fontWeight: FontWeight.w700,
@@ -643,7 +643,7 @@ class _WeeklyChart extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 18),
               child: Center(
                 child: Text(
-                  'مافيش طلبات مسلّمة في الفترة دي',
+                  'لا توجد طلبات مسلَّمة في هذه الفترة',
                   style: QText.tiny.copyWith(color: QColors.faint, fontWeight: FontWeight.w600),
                 ),
               ),
@@ -676,7 +676,7 @@ class _WeeklyChart extends StatelessWidget {
                               bar.label,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'Cairo',
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
@@ -732,19 +732,19 @@ class _BreakdownCard extends StatelessWidget {
               QPrice(value: breakdown.deliveryFees, size: 15),
             ],
           ),
-          const Divider(color: QColors.line, height: 20),
+          Divider(color: QColors.line, height: 20),
           _AmountRow(
             label: 'إكراميات',
             value: breakdown.tips ?? 0,
-            note: (breakdown.tips ?? 0) == 0 ? 'مافيش إكراميات لسه' : null,
+            note: (breakdown.tips ?? 0) == 0 ? 'لا توجد إكراميات بعد' : null,
           ),
-          const Divider(color: QColors.line, height: 20),
+          Divider(color: QColors.line, height: 20),
           _AmountRow(
             label: 'مكافآت',
             value: breakdown.bonus ?? 0,
-            note: (breakdown.bonus ?? 0) == 0 ? 'مافيش مكافآت لسه' : null,
+            note: (breakdown.bonus ?? 0) == 0 ? 'لا توجد مكافآت بعد' : null,
           ),
-          const Divider(color: QColors.line, height: 20),
+          Divider(color: QColors.line, height: 20),
           Row(
             children: [
               Expanded(
@@ -805,7 +805,7 @@ void _snack(BuildContext context, String message) {
     ..hideCurrentSnackBar()
     ..showSnackBar(
       SnackBar(
-        backgroundColor: QColors.ink,
+        backgroundColor: QColors.inkSurface,
         behavior: SnackBarBehavior.floating,
         content: Text(
           message,

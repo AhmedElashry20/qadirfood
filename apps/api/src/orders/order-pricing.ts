@@ -33,8 +33,21 @@ export function computeOrderTotals(input: OrderPricingInput): OrderPricingResult
   const taxable = subtotal.minus(discount).plus(deliveryFee);
   const vat = taxable.times(input.vatPercent).dividedBy(100);
   const total = taxable.plus(vat);
-  // العمولة على المجموع بس — مش على التوصيل ولا الضريبة.
+  // العمولة على المجموع فقط — لا على التوصيل ولا الضريبة.
   const commission = subtotal.times(input.commissionRate).dividedBy(100);
 
   return { taxable, vat, total, commission };
+}
+
+/**
+ * المبلغ اللي بيتحصّل فعلاً من العميل = فاتورة الطلب + الإكرامية.
+ *
+ * منفصل عن `computeOrderTotals` عن قصد: `total` هو قيمة التوريد الخاضع للضريبة
+ * (واللي الفاتورة الضريبية والعمولة والتسويات بيتبنوا عليها)، والإكرامية تمرير
+ * كامل للمندوب — مافيش عليها ضريبة ولا عمولة. الخلط بينهم بيكسر الفاتورة.
+ */
+export function chargeableTotal(total: Decimal.Value, tip: Decimal.Value = 0): Decimal {
+  const t = new Decimal(total);
+  const tipValue = new Decimal(tip);
+  return t.plus(tipValue.isNegative() ? 0 : tipValue);
 }

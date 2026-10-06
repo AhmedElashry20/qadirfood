@@ -53,7 +53,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
       );
     } catch (_) {
       if (!mounted) return;
-      _snack(context, 'مش قادرين نفتح الكاميرا أو المعرض');
+      _snack(context, 'تعذّر فتح الكاميرا أو المعرض');
       return;
     }
     if (picked == null || !mounted) return;
@@ -67,7 +67,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
             file: File(picked.path),
           );
       if (!mounted) return;
-      _snack(context, 'تم رفع ${document.typeLabel} — تحت المراجعة دلوقتي');
+      _snack(context, 'تم رفع ${document.typeLabel} — تحت المراجعة الآن');
     } on ApiException catch (e) {
       if (!mounted) return;
       _snack(context, e.message);
@@ -118,7 +118,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
       body: documentsAsync.when(
         loading: () => const QLoading(),
         error: (error, _) => QErrorView(
-          message: error is ApiException ? error.message : 'مش قادرين نجيب وثائقك',
+          message: error is ApiException ? error.message : 'تعذّر تحميل وثائقك',
           onRetry: () => ref.invalidate(documentsProvider),
         ),
         data: (rows) => RefreshIndicator(
@@ -148,7 +148,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                   borderRadius: BorderRadius.circular(QRadius.md),
                   border: Border.all(color: QColors.tintBorder),
                 ),
-                child: const Text(
+                child: Text(
                   '💡 بعد قبول الوثائق الإلزامية هيتفعل حسابك تلقائياً وتقدر تستقبل طلبات',
                   style: TextStyle(
                     fontFamily: 'Cairo',
@@ -309,7 +309,7 @@ class _DocumentRow extends StatelessWidget {
                       document.typeLabel,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Cairo',
                         fontSize: 14.5,
                         fontWeight: FontWeight.w800,
@@ -354,7 +354,7 @@ class _DocumentRow extends StatelessWidget {
                   ),
                   child: Text(
                     warning,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Cairo',
                       fontSize: 10.5,
                       fontWeight: FontWeight.w800,
@@ -368,7 +368,7 @@ class _DocumentRow extends StatelessWidget {
         ),
         const SizedBox(width: 10),
         if (uploading)
-          const SizedBox(
+          SizedBox(
             width: 20,
             height: 20,
             child: CircularProgressIndicator(strokeWidth: 2.4, color: QColors.gold),
@@ -489,11 +489,11 @@ void _snack(BuildContext context, String message) {
     ..hideCurrentSnackBar()
     ..showSnackBar(
       SnackBar(
-        backgroundColor: QColors.ink,
+        backgroundColor: QColors.inkSurface,
         behavior: SnackBarBehavior.floating,
         content: Text(
           message,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Cairo',
             fontSize: 13.5,
             fontWeight: FontWeight.w700,

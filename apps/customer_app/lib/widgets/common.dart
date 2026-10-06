@@ -22,7 +22,7 @@ class QHeader extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: QColors.surface,
         border: Border(bottom: BorderSide(color: QColors.line)),
       ),
@@ -88,7 +88,7 @@ class QBackButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(QRadius.sm),
           boxShadow: light ? kCardShadow : null,
         ),
-        child: const Icon(Icons.arrow_back, size: 20, color: QColors.ink),
+        child: Icon(Icons.arrow_back, size: 20, color: QColors.ink),
       ),
     );
   }
@@ -215,18 +215,20 @@ class QChip extends StatelessWidget {
 
 /// السعر: الرقم بخط Outfit و«ر.س» بخط Cairo أصغر — زي التصميم بالظبط.
 class QPrice extends StatelessWidget {
+  /// `color` nullable: القيمة الافتراضية لازم تكون ثابتة وقت الترجمة، وألوان
+  /// الثيم بقت getters بتتغيّر مع الوضع. بتتحلّ في `build`.
   const QPrice({
     super.key,
     required this.value,
     this.size = 15,
-    this.color = QColors.ink,
+    this.color,
     this.showCurrency = true,
     this.strikethrough = false,
   });
 
   final double value;
   final double size;
-  final Color color;
+  final Color? color;
   final bool showCurrency;
   final bool strikethrough;
 
@@ -250,7 +252,7 @@ class QPrice extends StatelessWidget {
                     fontFamily: 'Cairo',
                     fontSize: size * 0.78,
                     fontWeight: FontWeight.w700,
-                    color: color,
+                    color: color ?? QColors.ink,
                     decoration: deco,
                   ),
                 ),
@@ -272,7 +274,7 @@ class QRatingPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration:
-          BoxDecoration(color: QColors.ink, borderRadius: BorderRadius.circular(QRadius.sm - 2)),
+          BoxDecoration(color: QColors.inkSurface, borderRadius: BorderRadius.circular(QRadius.sm - 2)),
       child: Text('${fmt.rating(rating)} ★', style: QText.num(size: 13, color: QColors.brand)),
     );
   }
@@ -280,17 +282,22 @@ class QRatingPill extends StatelessWidget {
 
 /// شارة فوق صورة الكارت («الأكثر طلباً» / «-30%»).
 class QBadge extends StatelessWidget {
-  const QBadge({super.key, required this.label, this.color = QColors.brand, this.textColor});
+  const QBadge({super.key, required this.label, this.color, this.textColor});
 
   final String label;
-  final Color color;
+
+  /// nullable لنفس سبب `QPrice.color` — بتتحلّ لـ `QColors.brand` في `build`.
+  final Color? color;
   final Color? textColor;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(QRadius.pill)),
+      decoration: BoxDecoration(
+        color: color ?? QColors.brand,
+        borderRadius: BorderRadius.circular(QRadius.pill),
+      ),
       child: Text(
         label,
         style: TextStyle(
@@ -313,7 +320,7 @@ class QCard extends StatelessWidget {
     this.onTap,
     this.selected = false,
     this.radius = QRadius.lg,
-    this.color = QColors.surface,
+    this.color,
   });
 
   final Widget child;
@@ -323,12 +330,14 @@ class QCard extends StatelessWidget {
   /// محدّد = إطار أصفر (اختيار عنوان/طريقة دفع).
   final bool selected;
   final double radius;
-  final Color color;
+
+  /// nullable لنفس سبب `QPrice.color` — بتتحلّ لـ `QColors.surface` في `build`.
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: color,
+      color: color ?? QColors.surface,
       borderRadius: BorderRadius.circular(radius),
       child: InkWell(
         onTap: onTap,
@@ -383,7 +392,7 @@ class QListTile extends StatelessWidget {
             Expanded(
               child: Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Cairo',
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
@@ -392,7 +401,7 @@ class QListTile extends StatelessWidget {
               ),
             ),
             if (trailing != null) trailing!,
-            if (showChevron) const Icon(Icons.chevron_right, size: 20, color: QColors.hint),
+            if (showChevron) Icon(Icons.chevron_right, size: 20, color: QColors.hint),
           ],
         ),
       ),
@@ -419,7 +428,7 @@ class QTileGroup extends StatelessWidget {
         children: [
           for (var i = 0; i < children.length; i++) ...[
             children[i],
-            if (i != children.length - 1) const Divider(color: QColors.chip, height: 1),
+            if (i != children.length - 1) Divider(color: QColors.chip, height: 1),
           ],
         ],
       ),
@@ -456,7 +465,7 @@ class QQuantityStepper extends StatelessWidget {
         children: [
           InkWell(
             onTap: onDecrement,
-            child: const Icon(Icons.remove, size: 18, color: QColors.hint),
+            child: Icon(Icons.remove, size: 18, color: QColors.hint),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -464,7 +473,7 @@ class QQuantityStepper extends StatelessWidget {
           ),
           InkWell(
             onTap: onIncrement,
-            child: const Icon(Icons.add, size: 18, color: QColors.ink),
+            child: Icon(Icons.add, size: 18, color: QColors.ink),
           ),
         ],
       ),
@@ -568,7 +577,7 @@ class QCheckBox extends StatelessWidget {
         borderRadius: BorderRadius.circular(7),
         border: checked ? null : Border.all(color: const Color(0xFFD8D6CE), width: 2),
       ),
-      child: checked ? const Icon(Icons.check, size: 15, color: QColors.ink) : null,
+      child: checked ? Icon(Icons.check, size: 15, color: QColors.ink) : null,
     );
   }
 }
@@ -617,7 +626,7 @@ class QField extends StatelessWidget {
           // الحقول اللاتينية (إيميل/تاريخ/بطاقة) بخط Outfit زي باقي الأرقام في التطبيق.
           style: textDirection == TextDirection.ltr
               ? QText.num(size: 14, weight: FontWeight.w700)
-              : const TextStyle(
+              : TextStyle(
                   fontFamily: 'Cairo',
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
@@ -658,7 +667,7 @@ class QImage extends StatelessWidget {
         placeholder: (_, __) => Container(color: QColors.chip),
         errorWidget: (_, __, ___) => Container(
           color: QColors.chip,
-          child: const Icon(Icons.restaurant, color: QColors.hint),
+          child: Icon(Icons.restaurant, color: QColors.hint),
         ),
       ),
     );
@@ -689,7 +698,7 @@ class QEmpty extends StatelessWidget {
       child: Text(
         '$emoji  $message',
         textAlign: TextAlign.center,
-        style: const TextStyle(
+        style: TextStyle(
           fontFamily: 'Cairo',
           fontSize: 13.5,
           fontWeight: FontWeight.w700,

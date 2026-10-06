@@ -14,20 +14,20 @@ import '../../widgets/common.dart';
 
 const _cardPadding = EdgeInsets.symmetric(horizontal: 16, vertical: 14);
 
-const _sectionTitle =
+final _sectionTitle =
     TextStyle(fontFamily: 'Cairo', fontSize: 14, fontWeight: FontWeight.w800, color: QColors.ink);
 
-const _goldLink = TextStyle(
+final _goldLink = TextStyle(
   fontFamily: 'Cairo',
   fontSize: 12.5,
   fontWeight: FontWeight.w800,
   color: QColors.gold,
 );
 
-const _metaLabel =
+final _metaLabel =
     TextStyle(fontFamily: 'Cairo', fontSize: 13, fontWeight: FontWeight.w600, color: QColors.label);
 
-const _metaValue =
+final _metaValue =
     TextStyle(fontFamily: 'Cairo', fontSize: 13, fontWeight: FontWeight.w700, color: QColors.ink);
 
 class OrderDetailsScreen extends ConsumerWidget {
@@ -40,9 +40,9 @@ class OrderDetailsScreen extends ConsumerWidget {
     final order = ref.watch(orderProvider(orderId));
 
     return order.when(
-      loading: () => const Scaffold(
+      loading: () => Scaffold(
         backgroundColor: QColors.canvas,
-        appBar: QHeader(title: 'تفاصيل الطلب'),
+        appBar: const QHeader(title: 'تفاصيل الطلب'),
         body: Center(child: CircularProgressIndicator(color: QColors.brand)),
       ),
       error: (e, _) => Scaffold(
@@ -76,7 +76,7 @@ class _OrderDetailsView extends ConsumerWidget {
       appBar: QHeader(
         title: 'طلب ${ltr(order.number)}',
         subtitle: Text(
-          '$emoji ${order.status.ar}${showEta ? " — يوصل ${ltr(order.etaLabel!)}" : ""}',
+          '$emoji ${order.statusLabel}${showEta ? " — يوصل ${ltr(order.etaLabel!)}" : ""}',
           style: TextStyle(
             fontFamily: 'Cairo',
             fontSize: 12,
@@ -103,7 +103,7 @@ class _OrderDetailsView extends ConsumerWidget {
                         order.restaurantName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Cairo',
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
@@ -115,7 +115,7 @@ class _OrderDetailsView extends ConsumerWidget {
                         '${order.address.title} · ${order.address.details}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Cairo',
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -128,7 +128,7 @@ class _OrderDetailsView extends ConsumerWidget {
                 const SizedBox(width: 8),
                 InkWell(
                   onTap: () => _reorder(context, ref, order),
-                  child: const Text('اطلب مجدداً', style: _goldLink),
+                  child: Text('اطلب مجدداً', style: _goldLink),
                 ),
               ],
             ),
@@ -141,10 +141,10 @@ class _OrderDetailsView extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('الأصناف', style: _sectionTitle),
+                Text('الأصناف', style: _sectionTitle),
                 const SizedBox(height: 10),
                 for (final line in order.lines) _LineRow(line: line),
-                const Divider(color: QColors.line, height: 20),
+                Divider(color: QColors.line, height: 20),
                 _BillRow(
                   label: 'التوصيل + الضريبة',
                   value: Text(
@@ -167,7 +167,7 @@ class _OrderDetailsView extends ConsumerWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'الإجمالي',
                       style: TextStyle(
                         fontFamily: 'Cairo',
@@ -271,7 +271,7 @@ Future<void> _reorder(BuildContext context, WidgetRef ref, Order order) async {
     context.push(QRoutes.restaurant(draft.branchId.isEmpty ? order.branchId : draft.branchId));
     _snack(
       context,
-      draft.hasUnavailable ? 'بعض الأصناف مش متوفرة دلوقتي' : 'ضفنا أصناف الطلب — راجعها قبل الدفع',
+      draft.hasUnavailable ? 'بعض الأصناف غير متوفرة حالياً' : 'ضفنا أصناف الطلب — راجعها قبل الدفع',
     );
   } on ApiException catch (e) {
     if (!context.mounted) return;
@@ -305,7 +305,7 @@ class _LineRow extends StatelessWidget {
                   if (line.optionsLabel != null) TextSpan(text: ' — ${line.optionsLabel}'),
                 ],
               ),
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Cairo',
                 fontSize: 13.5,
                 fontWeight: FontWeight.w700,
@@ -390,7 +390,7 @@ void _snack(BuildContext context, String message) {
       SnackBar(
         content: Text(message, style: QText.body.copyWith(color: QColors.brand)),
         behavior: SnackBarBehavior.floating,
-        backgroundColor: QColors.ink,
+        backgroundColor: QColors.inkSurface,
         duration: const Duration(seconds: 3),
       ),
     );

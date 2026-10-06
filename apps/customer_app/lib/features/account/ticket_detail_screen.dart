@@ -86,7 +86,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
       backgroundColor: QColors.canvas,
       appBar: const QHeader(title: 'تذكرة الدعم'),
       body: async.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: QColors.brand)),
+        loading: () => Center(child: CircularProgressIndicator(color: QColors.brand)),
         error: (e, _) => _ErrorView(
           message: e is ApiException ? e.message : 'تعذّر تحميل التذكرة',
           onRetry: () => ref.invalidate(provider),
@@ -109,9 +109,9 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
         _HeaderCard(ticket: ticket),
         Expanded(
           child: messages.isEmpty
-              ? const Center(
+              ? Center(
                   child: Padding(
-                    padding: EdgeInsets.all(QSpace.screenH),
+                    padding: const EdgeInsets.all(QSpace.screenH),
                     child: Text('لا توجد رسائل بعد', style: QText.bodyMuted),
                   ),
                 )
@@ -140,7 +140,7 @@ class _HeaderCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: QColors.surface,
         border: Border(bottom: BorderSide(color: QColors.line)),
       ),
@@ -154,7 +154,7 @@ class _HeaderCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   ticket.subject,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Cairo',
                     fontSize: 15.5,
                     fontWeight: FontWeight.w900,
@@ -170,7 +170,7 @@ class _HeaderCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text.rich(
             TextSpan(
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Cairo',
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -255,7 +255,7 @@ class _MessageBubble extends StatelessWidget {
                 children: [
                   Text(
                     message.body,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Cairo',
                       fontSize: 13.5,
                       fontWeight: FontWeight.w600,
@@ -293,7 +293,7 @@ class _Composer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: QColors.surface,
         border: Border(top: BorderSide(color: QColors.line)),
       ),
@@ -310,7 +310,7 @@ class _Composer extends StatelessWidget {
                   maxLines: 4,
                   textInputAction: TextInputAction.newline,
                   onSubmitted: (_) => onSend(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Cairo',
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -346,7 +346,7 @@ class _SendButton extends StatelessWidget {
         child: InkWell(
           onTap: enabled ? onTap : null,
           customBorder: const CircleBorder(),
-          child: const SizedBox(
+          child: SizedBox(
             width: 46,
             height: 46,
             child: Icon(Icons.send_rounded, size: 20, color: QColors.ink),
@@ -365,7 +365,7 @@ class _ClosedBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: QColors.surface,
         border: Border(top: BorderSide(color: QColors.line)),
       ),
@@ -375,7 +375,7 @@ class _ClosedBar extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(QSpace.screenH, 14, QSpace.screenH, 14),
           child: Column(
             children: [
-              const Text(
+              Text(
                 'التذكرة مغلقة',
                 style: TextStyle(
                   fontFamily: 'Cairo',
@@ -430,7 +430,7 @@ void _snack(BuildContext context, String message) {
       SnackBar(
         content: Text(message, style: QText.body.copyWith(color: QColors.brand)),
         behavior: SnackBarBehavior.floating,
-        backgroundColor: QColors.ink,
+        backgroundColor: QColors.inkSurface,
         duration: const Duration(seconds: 3),
       ),
     );

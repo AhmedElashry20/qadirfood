@@ -83,7 +83,7 @@ export class TgaService {
       where: { tgaCardNumber: dto.cardNumber, id: { not: captainId } },
       select: { id: true },
     });
-    if (clash) throw new BadRequestException('رقم بطاقة التوصيل ده متسجّل لكابتن تاني');
+    if (clash) throw new BadRequestException('رقم بطاقة التوصيل هذا مسجَّل لكابتن آخر');
 
     const updated = await this.prisma.captain.update({
       where: { id: captainId },

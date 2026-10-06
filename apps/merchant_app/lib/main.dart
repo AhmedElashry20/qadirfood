@@ -9,6 +9,7 @@ import 'core/api_client.dart';
 import 'core/router.dart';
 import 'core/socket_service.dart';
 import 'core/theme.dart';
+import 'providers/theme_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,24 +35,32 @@ Future<void> main() async {
   );
 }
 
-class MerchantApp extends StatefulWidget {
+class MerchantApp extends ConsumerStatefulWidget {
   const MerchantApp({super.key, this.isLoggedIn = false});
 
   final bool isLoggedIn;
 
   @override
-  State<MerchantApp> createState() => _MerchantAppState();
+  ConsumerState<MerchantApp> createState() => _MerchantAppState();
 }
 
-class _MerchantAppState extends State<MerchantApp> {
+class _MerchantAppState extends ConsumerState<MerchantApp> {
   late final _router = buildRouter(isLoggedIn: widget.isLoggedIn);
 
   @override
   Widget build(BuildContext context) {
+    final mode = ref.watch(themeModeProvider);
+
+    // `QColors.active` لازم تتظبّط **قبل** `buildMerchantTheme()`: الثيم بيقرا من
+    // الـ getters، فلو الترتيب اتقلب الثيم بيتبنى بألوان الوضع القديم.
+    applyPalette(mode, MediaQuery.platformBrightnessOf(context));
+
     return MaterialApp.router(
       title: 'قادر فود — المطعم',
       debugShowCheckedModeBanner: false,
       theme: buildMerchantTheme(),
+      darkTheme: buildMerchantTheme(brightness: Brightness.dark),
+      themeMode: mode,
       routerConfig: _router,
       locale: const Locale('ar'),
       supportedLocales: const [Locale('ar'), Locale('en')],
@@ -60,10 +69,15 @@ class _MerchantAppState extends State<MerchantApp> {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      builder: (context, child) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: child ?? const SizedBox.shrink(),
-      ),
+      // تاني مرة عن قصد: الشجرة بتتبنى تاني لما وضع الجهاز يتغيّر والتطبيق
+      // شغّال، فلازم الـ palette تكون مظبوطة هنا كمان.
+      builder: (context, child) {
+        applyPalette(mode, MediaQuery.platformBrightnessOf(context));
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
     );
   }
 }

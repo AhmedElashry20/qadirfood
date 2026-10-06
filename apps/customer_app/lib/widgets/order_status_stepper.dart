@@ -77,7 +77,7 @@ class _Step extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
           child: done
-              ? const Icon(Icons.check, size: 18, color: QColors.ink)
+              ? Icon(Icons.check, size: 18, color: QColors.ink)
               : Text(emoji, style: const TextStyle(fontSize: 15)),
         ),
         const SizedBox(height: 4),

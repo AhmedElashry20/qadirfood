@@ -56,7 +56,7 @@ class CategoryRestaurantsScreen extends ConsumerWidget {
         ),
       ),
       body: restaurants.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: QColors.brand)),
+        loading: () => Center(child: CircularProgressIndicator(color: QColors.brand)),
         error: (error, _) => _ErrorView(
           error: error,
           onRetry: () => ref.invalidate(categoryRestaurantsProvider(categoryId)),
@@ -64,7 +64,7 @@ class CategoryRestaurantsScreen extends ConsumerWidget {
         data: (list) => list.isEmpty
             ? const Padding(
                 padding: EdgeInsets.fromLTRB(QSpace.screenH, 16, QSpace.screenH, QSpace.screenH),
-                child: QEmpty(message: 'مافي مطاعم في التصنيف ده حالياً', emoji: '🍽️'),
+                child: QEmpty(message: 'لا توجد مطاعم في هذا التصنيف حالياً', emoji: '🍽️'),
               )
             : ListView.separated(
                 padding: const EdgeInsets.fromLTRB(
@@ -99,7 +99,7 @@ class _ErrorView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final err = error;
-    final message = err is ApiException ? err.message : 'حصل خطأ';
+    final message = err is ApiException ? err.message : 'حدث خطأ';
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: QSpace.screenH, vertical: 24),

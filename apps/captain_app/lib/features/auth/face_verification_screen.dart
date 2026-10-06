@@ -20,7 +20,7 @@ class FaceVerificationScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: QColors.ink,
+      backgroundColor: QColors.inkSurface,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -42,8 +42,8 @@ class FaceVerificationScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 10),
-                const Text(
-                  'الميزة دي محتاجة ربط كاميرا وتحقق في الـ API',
+                Text(
+                  'تحتاج هذه الميزة ربط كاميرا وتحقّقاً في الـ API',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: 'Cairo',

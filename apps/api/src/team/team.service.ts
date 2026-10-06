@@ -76,7 +76,7 @@ export class TeamService {
       if (wantFull) {
         // ترقية نفسك لكامل ممنوعة إلا لو إنت أصلاً كامل (يبقى مافيش تصعيد).
         if (!currentlyFull) {
-          throw new ForbiddenException('ماينفعش تدّي نفسك صلاحية كاملة — لازم أدمن تاني يعملها');
+          throw new ForbiddenException('لا يمكنك منح نفسك صلاحية كاملة — يلزم مسؤول آخر');
         }
       } else {
         // لازم تحتفظ بإدارة المستخدمين عشان ماتقفلش نفسك برّه الإدارة.
@@ -177,7 +177,7 @@ export class TeamService {
       changes.push('إعادة كلمة المرور');
     }
 
-    if (!changes.length) throw new BadRequestException('مافيش تغيير');
+    if (!changes.length) throw new BadRequestException('لا يوجد تغيير');
 
     const updated = await this.prisma.user.update({
       where: { id },

@@ -58,7 +58,7 @@ export class CompaniesController {
   @Roles(UserRole.COMPANY)
   @ApiOperation({ summary: 'مناديب شركتي' })
   myCaptains(@CurrentUser() user: AuthUser, @Query() query: ListCaptainsDto) {
-    if (!user.companyId) throw new ForbiddenException('الجلسة مش مربوطة بشركة');
+    if (!user.companyId) throw new ForbiddenException('الجلسة غير مرتبطة بشركة');
     // النطاق بيتفرض هنا — أي companyId في الكويري بيتتجاهل لصالح شركة المستخدم.
     return this.captains.listCaptains({ ...query, companyId: user.companyId, freelanceOnly: undefined });
   }
@@ -67,7 +67,7 @@ export class CompaniesController {
 
   @Get()
   @Roles(UserRole.ADMIN, UserRole.COMPANY)
-  @ApiOperation({ summary: 'قائمة الشركات (الشركة بتشوف نفسها بس)' })
+  @ApiOperation({ summary: 'قائمة الشركات (ترى الشركة نفسها فقط)' })
   list(@CurrentUser() user: AuthUser, @Query() query: ListCompaniesDto) {
     return this.companies.list(user, query.page ?? 1, query.pageSize ?? 20);
   }
@@ -124,7 +124,7 @@ export class CompaniesController {
   ) {
     // مستخدم الشركة مقفول على شركته — لو طلب شركة تانية بنرفض.
     if (user.role === UserRole.COMPANY && user.companyId !== id) {
-      throw new ForbiddenException('مش مسموح لك بشركة تانية');
+      throw new ForbiddenException('غير مسموح لك بشركة أخرى');
     }
     return this.captains.listCaptains({ ...query, companyId: id, freelanceOnly: undefined });
   }
@@ -146,7 +146,7 @@ export class CompanySettlementsController {
 
   @Get()
   @Roles(UserRole.ADMIN, UserRole.COMPANY)
-  @ApiOperation({ summary: 'تسويات الشركات (الشركة بتشوف بتاعتها بس)' })
+  @ApiOperation({ summary: 'تسويات الشركات (ترى الشركة تسوياتها فقط)' })
   list(@CurrentUser() user: AuthUser, @Query() query: ListCompanySettlementsDto) {
     return this.settlements.list(user, query.companyId, query.status, query.page ?? 1, query.pageSize ?? 20);
   }

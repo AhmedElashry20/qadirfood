@@ -40,7 +40,7 @@ describe('حساب تسوية الشركة', () => {
     expect(fahd.tripCount).toBe(1);
   });
 
-  it('سطر لكل طلب (مش لكل مندوب)', () => {
+  it('سطر لكل طلب (لا لكل مندوب)', () => {
     const r = computeCompanySettlement([trip('A', 'saad', 10), trip('B', 'saad', 14)], 10);
     expect(r.lines).toHaveLength(2); // طلبين
     expect(r.distributions).toHaveLength(1); // مندوب واحد
@@ -53,7 +53,7 @@ describe('حساب تسوية الشركة', () => {
     expect(r.netPayout.toFixed(2)).toBe('21.60');
   });
 
-  it('دورة فاضية = صفر', () => {
+  it('دورة فارغة = صفر', () => {
     const r = computeCompanySettlement([], 10);
     expect(r.grossPayout.toFixed(2)).toBe('0.00');
     expect(r.netPayout.toFixed(2)).toBe('0.00');

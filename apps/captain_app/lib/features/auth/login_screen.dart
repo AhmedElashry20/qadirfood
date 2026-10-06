@@ -73,7 +73,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: QColors.ink,
+      backgroundColor: QColors.inkSurface,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -107,7 +107,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'سجّل دخولك وابدأ التوصيل واكسب',
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -191,8 +191,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   child: GestureDetector(
                     onTap: _goRegister,
                     behavior: HitTestBehavior.opaque,
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 6),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
                       child: Text.rich(
                         TextSpan(
                           text: 'كابتن جديد؟ ',
@@ -220,7 +220,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 const SizedBox(height: 26),
 
-                const Text(
+                Text(
                   'بالتسجيل أنت توافق على اتفاقية الكباتن وسياسة الخصوصية',
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -262,7 +262,7 @@ class _BrandButton extends StatelessWidget {
           height: QSpace.tapTarget,
           alignment: Alignment.center,
           child: loading
-              ? const SizedBox(
+              ? SizedBox(
                   width: 20,
                   height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2.4, color: QColors.ink),
@@ -287,11 +287,11 @@ void _snack(BuildContext context, String message) {
     ..hideCurrentSnackBar()
     ..showSnackBar(
       SnackBar(
-        backgroundColor: QColors.ink,
+        backgroundColor: QColors.inkSurface,
         behavior: SnackBarBehavior.floating,
         content: Text(
           message,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Cairo',
             fontSize: 13.5,
             fontWeight: FontWeight.w700,

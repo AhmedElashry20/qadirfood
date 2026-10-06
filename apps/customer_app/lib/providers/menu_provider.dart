@@ -21,5 +21,5 @@ final menuItemProvider = FutureProvider.family<MenuItem, (String, String)>((ref,
     }
   }
 
-  throw ApiException('الصنف مش موجود في المنيو', statusCode: 404);
+  throw const ApiException('الصنف غير موجود في القائمة', statusCode: 404);
 });

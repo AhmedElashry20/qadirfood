@@ -135,7 +135,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final devCode = auth.devCode;
 
     return Scaffold(
-      backgroundColor: QColors.ink,
+      backgroundColor: QColors.inkSurface,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -163,7 +163,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     Text.rich(
                       TextSpan(
                         text: 'هنسجّلك على الرقم ',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Cairo',
                           fontSize: 14.5,
                           fontWeight: FontWeight.w600,
@@ -228,8 +228,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       controller: _plate,
                     ),
                     const SizedBox(height: 10),
-                    const Text(
-                      'نوع المركبة ورقم اللوحة لسه مش بيتحفظوا — الـ API مابيقبلهمش في التسجيل.',
+                    Text(
+                      'نوع المركبة ورقم اللوحة لا يُحفظان بعد — الـ API لا يقبلهما في التسجيل.',
                       style: TextStyle(
                         fontFamily: 'Cairo',
                         fontSize: 11.5,
@@ -257,7 +257,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             padding: const EdgeInsets.symmetric(vertical: 6),
                             child: Text(
                               _sendingCode ? 'جاري الإرسال…' : 'إرسال الرمز',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'Cairo',
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.w900,
@@ -279,7 +279,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Text(
+                                  Text(
                                     'رمز التطوير: ',
                                     style: TextStyle(
                                       fontFamily: 'Cairo',
@@ -307,7 +307,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         ),
                         child: Text(
                           _error!,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: 'Cairo',
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
@@ -342,7 +342,7 @@ class _FieldLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           fontFamily: 'Cairo',
           fontSize: 13,
           fontWeight: FontWeight.w700,
@@ -417,7 +417,7 @@ class _DarkFieldState extends State<_DarkField> {
         hintText: widget.hint,
         hintStyle: widget.numeric
             ? QText.num(size: 16, weight: FontWeight.w600, color: QColors.darkFooter)
-            : const TextStyle(
+            : TextStyle(
                 fontFamily: 'Cairo',
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -473,7 +473,7 @@ class _SubmitButton extends StatelessWidget {
           height: QSpace.tapTarget,
           alignment: Alignment.center,
           child: loading
-              ? const SizedBox(
+              ? SizedBox(
                   width: 20,
                   height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2.4, color: QColors.ink),
@@ -498,11 +498,11 @@ void _snack(BuildContext context, String message) {
     ..hideCurrentSnackBar()
     ..showSnackBar(
       SnackBar(
-        backgroundColor: QColors.ink,
+        backgroundColor: QColors.inkSurface,
         behavior: SnackBarBehavior.floating,
         content: Text(
           message,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Cairo',
             fontSize: 13.5,
             fontWeight: FontWeight.w700,

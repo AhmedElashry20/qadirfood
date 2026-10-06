@@ -4,7 +4,7 @@ import { Type } from 'class-transformer';
 import { IsEnum, IsIn, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 
 export class CreateRefundDto {
-  @ApiPropertyOptional({ description: 'المبلغ — لو فاضي بيترد الباقي كله' })
+  @ApiPropertyOptional({ description: 'المبلغ — إن كان فارغاً يُسترد الباقي كله' })
   @IsOptional()
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 }, { message: 'المبلغ لازم يكون رقم بمنزلتين عشريتين على الأكتر' })
@@ -19,7 +19,7 @@ export class CreateRefundDto {
 
   @ApiPropertyOptional({
     enum: RefundLiability,
-    description: 'مين يتحمّل التكلفة — بيحدد رجوع العمولة والخصم من الكابتن',
+    description: 'من يتحمّل التكلفة — يحدّد رجوع العمولة والخصم من الكابتن',
   })
   @IsOptional()
   @IsEnum(RefundLiability, { message: 'جهة التحمّل غير معروفة' })

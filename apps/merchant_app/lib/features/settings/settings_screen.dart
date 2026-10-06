@@ -13,6 +13,7 @@ import '../../core/theme.dart';
 import '../../data/merchant_repository.dart';
 import '../../models/branch.dart';
 import '../../providers/branch_status_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/common.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -21,7 +22,7 @@ class SettingsScreen extends ConsumerWidget {
   void _snack(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: QColors.ink,
+        backgroundColor: QColors.inkSurface,
         content: Text(message, style: QText.body.copyWith(color: QColors.brand, fontSize: 14)),
       ),
     );
@@ -127,6 +128,15 @@ class SettingsScreen extends ConsumerWidget {
                   onTap: () => ref.read(alertSoundEnabledProvider.notifier).toggle(),
                 ),
                 QListTile(
+                  emoji: '🌓',
+                  title: 'المظهر',
+                  onTap: () => _pickTheme(context, ref),
+                  trailing: Text(
+                    ThemeModeNotifier.labelOf(ref.watch(themeModeProvider)),
+                    style: QText.tiny.copyWith(color: QColors.textMuted),
+                  ),
+                ),
+                QListTile(
                   emoji: '🎧',
                   title: 'دعم الشركاء',
                   onTap: () => _snack(context, 'قريباً'),
@@ -148,7 +158,7 @@ class SettingsScreen extends ConsumerWidget {
       builder: (dialogContext) => AlertDialog(
         backgroundColor: QColors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(QRadius.xl)),
-        title: const Text('مستخدمو الفرع', style: QText.section),
+        title: Text('مستخدمو الفرع', style: QText.section),
         content: SizedBox(
           width: 320,
           // Consumer عشان الحوار يتحدّث لوحده لما النداء يخلص.
@@ -160,7 +170,7 @@ class SettingsScreen extends ConsumerWidget {
                     style: QText.bodyMuted,
                   ),
                   data: (list) => list.isEmpty
-                      ? const Text('مافيش مستخدمين على الفرع', style: QText.bodyMuted)
+                      ? Text('لا يوجد مستخدمون على الفرع', style: QText.bodyMuted)
                       : Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -203,9 +213,9 @@ class SettingsScreen extends ConsumerWidget {
       builder: (dialogContext) => AlertDialog(
         backgroundColor: QColors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(QRadius.xl)),
-        title: const Text('تسجيل الخروج؟', style: QText.section),
-        content: const Text(
-          'هتحتاج تدخل بالإيميل أو رقم الموبايل تاني عشان تستقبل طلبات.',
+        title: Text('تسجيل الخروج؟', style: QText.section),
+        content: Text(
+          'ستحتاج إلى الدخول بالبريد أو رقم الجوال مرة أخرى لتستقبل الطلبات.',
           style: QText.bodyMuted,
         ),
         actions: [
@@ -246,7 +256,7 @@ class _SectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           fontFamily: 'Cairo',
           fontSize: 12,
           fontWeight: FontWeight.w800,
@@ -290,7 +300,7 @@ class _BranchCard extends StatelessWidget {
                         branch.nameAr,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Cairo',
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
@@ -316,7 +326,7 @@ class _BranchCard extends StatelessWidget {
               ],
             ),
           ),
-          const Icon(Icons.chevron_right, size: 20, color: QColors.hint),
+          Icon(Icons.chevron_right, size: 20, color: QColors.hint),
         ],
       ),
     );
@@ -343,7 +353,7 @@ class _LogoutCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: QColors.dangerBorder, width: 1.5),
           ),
-          child: const Text(
+          child: Text(
             'تسجيل الخروج',
             style: TextStyle(
               fontFamily: 'Cairo',
@@ -356,4 +366,53 @@ class _LogoutCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// منتقي المظهر — فاتح / داكن / حسب النظام.
+///
+/// شيت بدل شاشة كاملة: تلات خيارات بس، والتغيير بيبان فوراً وراء الشيت فالمستخدم
+/// يشوف النتيجة قبل ما يقفل.
+Future<void> _pickTheme(BuildContext context, WidgetRef ref) async {
+  await showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: QColors.surface,
+    builder: (_) => SafeArea(
+      child: Consumer(
+        builder: (_, sheetRef, __) {
+          final current = sheetRef.watch(themeModeProvider);
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 14),
+              Text(
+                'المظهر',
+                style: TextStyle(
+                  fontFamily: 'Cairo',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  color: QColors.ink,
+                ),
+              ),
+              const SizedBox(height: 10),
+              for (final mode in ThemeMode.values)
+                QListTile(
+                  title: ThemeModeNotifier.labelOf(mode),
+                  emoji: switch (mode) {
+                    ThemeMode.light => '☀️',
+                    ThemeMode.dark => '🌙',
+                    ThemeMode.system => '📱',
+                  },
+                  showChevron: false,
+                  trailing: current == mode
+                      ? Icon(Icons.check_rounded, size: 20, color: QColors.brand)
+                      : null,
+                  onTap: () => sheetRef.read(themeModeProvider.notifier).select(mode),
+                ),
+              const SizedBox(height: 10),
+            ],
+          );
+        },
+      ),
+    ),
+  );
 }

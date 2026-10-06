@@ -27,7 +27,7 @@ describe('حلّ منطقة التوصيل', () => {
     expect(p?.priority).toBe(3);
   });
 
-  it('عند تعادل الأولوية: ترتيب ثابت بالـ id (مش عشوائي)', () => {
+  it('عند تعادل الأولوية: ترتيب ثابت بالـ id (لا عشوائي)', () => {
     const dupA: ZoneBox = { ...olaya, id: 'm' };
     const dupB: ZoneBox = { ...olaya, id: 'x' };
     const r1 = resolveZone([dupB, dupA], 24.718, 46.679);

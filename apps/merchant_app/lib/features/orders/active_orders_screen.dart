@@ -47,7 +47,7 @@ class _ActiveOrdersScreenState extends ConsumerState<ActiveOrdersScreen> {
       showQSnack(context, e.message);
     } catch (_) {
       if (!mounted) return;
-      showQSnack(context, 'حصل خطأ، حاول تاني');
+      showQSnack(context, 'حدث خطأ، حاول مرة أخرى');
     }
   }
 
@@ -62,7 +62,7 @@ class _ActiveOrdersScreenState extends ConsumerState<ActiveOrdersScreen> {
       showQSnack(context, e.message);
     } catch (_) {
       if (!mounted) return;
-      showQSnack(context, 'حصل خطأ، حاول تاني');
+      showQSnack(context, 'حدث خطأ، حاول مرة أخرى');
     }
   }
 
@@ -108,7 +108,7 @@ class _ActiveOrdersScreenState extends ConsumerState<ActiveOrdersScreen> {
           loading: () => const QLoading(),
           error: (e, _) => QScrollableState(
             child: QErrorView(
-              message: e is ApiException ? e.message : 'حصل خطأ',
+              message: e is ApiException ? e.message : 'حدث خطأ',
               onRetry: () => ref.invalidate(activeOrdersProvider),
             ),
           ),
@@ -120,7 +120,7 @@ class _ActiveOrdersScreenState extends ConsumerState<ActiveOrdersScreen> {
 
             if (orders.isEmpty) {
               return const QScrollableState(
-                child: QEmpty(message: 'مافيش طلبات في المطبخ دلوقتي', emoji: '🍳'),
+                child: QEmpty(message: 'لا توجد طلبات في المطبخ الآن', emoji: '🍳'),
               );
             }
 

@@ -7,6 +7,7 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  IsNumber,
   Max,
   MaxLength,
   Min,
@@ -59,6 +60,37 @@ export class CreateOrderDto {
   @IsString()
   @MaxLength(500)
   customerNotes?: string;
+
+  /**
+   * نقاط ولاء للاستبدال كخصم على الطلب.
+   *
+   * قيمتها بالريال بتنضاف على خصم الكوبون ومقيّدة بالمجموع، فبتمشي في نفس
+   * مسار الخصم — الضريبة والعمولة مش محتاجين فرع خاص.
+   */
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  redeemPoints?: number;
+
+  /**
+   * إكرامية المندوب — بتضاف على المبلغ المحصّل وبتروح ١٠٠٪ للمندوب.
+   * مافيش عليها ضريبة ولا عمولة. للدفع الإلكتروني بس (الكاش بيتدفع في اليد).
+   */
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @Max(500)
+  tipAmount?: number;
+
+  /**
+   * طلب مجدول — وقت التسليم المطلوب بصيغة ISO. فاضي = طلب فوري.
+   * الحدود (أقل مهلة / أقصى مدى) في `scheduling.ts` ومتحقّقة في الخدمة.
+   */
+  @IsOptional()
+  @IsDateString()
+  scheduledFor?: string;
 
   @IsArray()
   @ArrayMinSize(1)
@@ -133,6 +165,12 @@ export class CreateReviewDto {
 }
 
 export class ListOrdersDto {
+  /** بحث نصي: رقم الطلب · اسم أو جوال العميل · اسم الكابتن · اسم الفرع. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  q?: string;
+
   @IsOptional()
   @IsArray()
   @IsEnum(OrderStatus, { each: true })
@@ -162,4 +200,12 @@ export class ListOrdersDto {
   @Min(1)
   @Max(100)
   pageSize?: number;
+}
+
+/** POST /orders/:id/messages */
+export class SendOrderMessageDto {
+  @IsString()
+  @IsNotEmpty({ message: 'الرسالة مطلوبة' })
+  @MaxLength(1000)
+  body!: string;
 }

@@ -181,8 +181,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
               borderRadius: BorderRadius.circular(QRadius.md),
               border: Border.all(color: QColors.tintBorder, width: 1.5),
             ),
-            child: const Text(
-              'ربط بوابة الدفع (Moyasar) لسه مش متفعّل — الدفع كاش عند الاستلام حالياً',
+            child: Text(
+              'لم يُفعَّل ربط بوابة الدفع (Moyasar) بعد — الدفع نقداً عند الاستلام حالياً',
               style: TextStyle(
                 fontFamily: 'Cairo',
                 fontSize: 12.5,
@@ -197,7 +197,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           const QButton(label: 'حفظ البطاقة', enabled: false),
           const SizedBox(height: 18),
 
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(

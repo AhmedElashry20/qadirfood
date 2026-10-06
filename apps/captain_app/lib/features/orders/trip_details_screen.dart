@@ -39,7 +39,7 @@ class TripDetailsScreen extends ConsumerWidget {
       body: tripAsync.when(
         loading: () => const QLoading(),
         error: (error, _) => QErrorView(
-          message: error is ApiException ? error.message : 'مش قادرين نجيب تفاصيل الطلب',
+          message: error is ApiException ? error.message : 'تعذّر تحميل تفاصيل الطلب',
           onRetry: () => ref.invalidate(tripProvider(orderId)),
         ),
         data: (trip) => ListView(
@@ -134,7 +134,7 @@ class _BillCard extends StatelessWidget {
           Text('الأصناف والفاتورة', style: QText.section.copyWith(fontSize: 14)),
           const SizedBox(height: 10),
           if (trip.items.isEmpty)
-            Text('مافيش أصناف في الطلب', style: QText.tiny.copyWith(color: QColors.faint))
+            Text('لا توجد أصناف في الطلب', style: QText.tiny.copyWith(color: QColors.faint))
           else
             for (final item in trip.items)
               Padding(
@@ -165,14 +165,14 @@ class _BillCard extends StatelessWidget {
                   ],
                 ),
               ),
-          const Divider(color: QColors.line, height: 20),
+          Divider(color: QColors.line, height: 20),
           _BillRow(label: 'إجمالي الطلب', value: trip.total),
           const SizedBox(height: 6),
           _BillRow(label: 'مستحقك', value: trip.payout, color: QColors.success, bold: true),
           const SizedBox(height: 8),
           Text(
-            'تفصيل الفاتورة (الأصناف / التوصيل / الضريبة) مش متاح في موديل الرحلة — '
-            'الرد بيوصل بالإجمالي والمستحق بس',
+            'تفصيل الفاتورة (الأصناف / التوصيل / الضريبة) غير متاح في موديل الرحلة — '
+            'يأتي الرد بالإجمالي والمستحق فقط',
             style: QText.tiny.copyWith(color: QColors.faint, fontWeight: FontWeight.w600),
           ),
         ],
@@ -185,13 +185,13 @@ class _BillRow extends StatelessWidget {
   const _BillRow({
     required this.label,
     required this.value,
-    this.color = QColors.ink,
+    this.color,
     this.bold = false,
   });
 
   final String label;
   final double value;
-  final Color color;
+  final Color? color;
   final bool bold;
 
   @override
@@ -242,16 +242,16 @@ class _MetaCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _MetaRow(label: 'العميل', value: trip.customerName.isEmpty ? '—' : trip.customerName),
-          const Divider(color: QColors.line, height: 18),
+          Divider(color: QColors.line, height: 18),
           _MetaRow(label: 'العنوان', value: address.isEmpty ? '—' : address),
-          const Divider(color: QColors.line, height: 18),
+          Divider(color: QColors.line, height: 18),
           _MetaRow(
             label: 'الدفع',
             value: trip.isPrepaid
                 ? '${trip.paymentLabel} — مدفوع مسبقاً'
                 : '${trip.paymentLabel} — تحصيل كاش',
           ),
-          const Divider(color: QColors.line, height: 18),
+          Divider(color: QColors.line, height: 18),
           _MetaRow(
             label: 'وقت التسليم',
             value: delivered == null ? '—' : _dateTime(delivered),

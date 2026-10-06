@@ -62,7 +62,7 @@ export class InvoicesService {
     }
 
     if (!INVOICEABLE.includes(order.paymentStatus)) {
-      throw new ForbiddenException('مافيش فاتورة ضريبية لطلب لسه ماتدفعش');
+      throw new ForbiddenException('لا توجد فاتورة ضريبية لطلب لم يُدفَع بعد');
     }
 
     const seller = this.seller();
@@ -122,7 +122,7 @@ export class InvoicesService {
         image: qrImage,
       },
       // ملاحظة صريحة إن دي المرحلة الأولى — توليد بس، من غير توقيع/اعتماد.
-      note: 'فاتورة ضريبية مبسّطة — توليد المرحلة الأولى. مافيش ربط أو اعتماد مسبق مع هيئة الزكاة (المرحلة الثانية).',
+      note: 'فاتورة ضريبية مبسَّطة — توليد المرحلة الأولى. لا يوجد ربط أو اعتماد مسبق مع هيئة الزكاة (المرحلة الثانية).',
     };
   }
 }

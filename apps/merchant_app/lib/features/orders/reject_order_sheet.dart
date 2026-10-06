@@ -72,7 +72,7 @@ class _RejectOrderSheetState extends ConsumerState<_RejectOrderSheet> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _sending = false);
-      showQSnack(context, 'حصل خطأ، حاول تاني');
+      showQSnack(context, 'حدث خطأ، حاول مرة أخرى');
     }
   }
 
@@ -101,7 +101,7 @@ class _RejectOrderSheetState extends ConsumerState<_RejectOrderSheet> {
               const SizedBox(height: 18),
               Row(
                 children: [
-                  const Text(
+                  Text(
                     'رفض الطلب ',
                     style: TextStyle(
                       fontFamily: 'Cairo',
@@ -116,7 +116,7 @@ class _RejectOrderSheetState extends ConsumerState<_RejectOrderSheet> {
                       style: QText.num(size: 18, weight: FontWeight.w800),
                     ),
                   ),
-                  const Text(
+                  Text(
                     '؟',
                     style: TextStyle(
                       fontFamily: 'Cairo',

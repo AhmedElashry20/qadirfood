@@ -31,7 +31,7 @@ export class TeamController {
 
   @Put(':id/permissions')
   @RequirePermission('users.manage')
-  @ApiOperation({ summary: 'ضبط صلاحيات موظف (فاضية = صلاحية كاملة)' })
+  @ApiOperation({ summary: 'ضبط صلاحيات موظف (فارغة = صلاحية كاملة)' })
   setPermissions(
     @CurrentUser() user: AuthUser,
     @Param('id', ParseUUIDPipe) id: string,

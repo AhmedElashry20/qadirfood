@@ -186,7 +186,7 @@ export class AuthService {
     }
 
     const membership = user.merchantsOf.find((m) => m.branchId === branchId);
-    if (!membership) throw new UnauthorizedException('غير مصرح لك بالدخول على هذا الفرع');
+    if (!membership) throw new UnauthorizedException('غير مصرَّح لك لك بالدخول على هذا الفرع');
 
     return this.issueTokens({ userId: user.id, role: user.role, branchId });
   }

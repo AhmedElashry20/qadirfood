@@ -14,7 +14,7 @@ export class RaiseTicketDto {
   @IsEnum(TicketCategory)
   category!: TicketCategory;
 
-  @ApiProperty({ example: 'طلبت ٢ برجر ووصل واحد بس' })
+  @ApiProperty({ example: 'طُلب برجران ووصل واحد فقط' })
   @IsString()
   @MinLength(3)
   @MaxLength(2000)

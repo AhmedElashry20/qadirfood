@@ -54,13 +54,13 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
           loading: () => const QLoading(),
           error: (e, _) => QScrollableState(
             child: QErrorView(
-              message: e is ApiException ? e.message : 'حصل خطأ',
+              message: e is ApiException ? e.message : 'حدث خطأ',
               onRetry: () => ref.invalidate(historyProvider(_filter)),
             ),
           ),
           data: (orders) => orders.isEmpty
               ? const QScrollableState(
-                  child: QEmpty(message: 'مافيش طلبات في المدة دي', emoji: '🧾'),
+                  child: QEmpty(message: 'لا توجد طلبات في هذه المدة', emoji: '🧾'),
                 )
               : ListView.separated(
                   padding: const EdgeInsets.fromLTRB(
@@ -101,7 +101,7 @@ class _SummaryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
-        color: QColors.ink,
+        color: QColors.inkSurface,
         borderRadius: BorderRadius.circular(QRadius.lg),
       ),
       child: Row(
@@ -114,7 +114,7 @@ class _SummaryCard extends StatelessWidget {
                   children: [
                     Text(
                       '${filter.label} — ',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Cairo',
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -127,7 +127,7 @@ class _SummaryCard extends StatelessWidget {
                         style: QText.num(size: 12.5, color: QColors.darkSub),
                       ),
                     ),
-                    const Text(
+                    Text(
                       ' طلب',
                       style: TextStyle(
                         fontFamily: 'Cairo',
@@ -144,7 +144,7 @@ class _SummaryCard extends StatelessWidget {
                   TextSpan(
                     text: fmt.money(total),
                     style: QText.num(size: 22, weight: FontWeight.w800, color: QColors.brand),
-                    children: const [
+                    children: [
                       TextSpan(
                         text: ' ر.س',
                         style: TextStyle(

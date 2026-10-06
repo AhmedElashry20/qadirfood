@@ -24,7 +24,7 @@ import '../core/location_service.dart' as geo;
 import '../core/socket_service.dart';
 
 class TripOffer {
-  TripOffer({
+  const TripOffer({
     required this.orderId,
     required this.orderNumber,
     required this.restaurantName,

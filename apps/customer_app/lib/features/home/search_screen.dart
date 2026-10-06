@@ -85,7 +85,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           textInputAction: TextInputAction.search,
                           onChanged: _onTyped,
                           onSubmitted: _setQuery,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: 'Cairo',
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
@@ -93,16 +93,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           ),
                           decoration: InputDecoration(
                             hintText: 'ابحث عن مطعم أو طبق…',
-                            prefixIcon: const Icon(Icons.search, size: 20, color: QColors.hint),
+                            prefixIcon: Icon(Icons.search, size: 20, color: QColors.hint),
                             contentPadding:
                                 const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(QRadius.md),
-                              borderSide: const BorderSide(color: QColors.brand, width: 2),
+                              borderSide: BorderSide(color: QColors.brand, width: 2),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(QRadius.md),
-                              borderSide: const BorderSide(color: QColors.brand, width: 2),
+                              borderSide: BorderSide(color: QColors.brand, width: 2),
                             ),
                           ),
                         ),
@@ -118,7 +118,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                             borderRadius: BorderRadius.circular(QRadius.md),
                             border: Border.all(color: QColors.border, width: 1.5),
                           ),
-                          child: const Icon(Icons.tune_rounded, size: 20, color: QColors.ink),
+                          child: Icon(Icons.tune_rounded, size: 20, color: QColors.ink),
                         ),
                       ),
                     ],
@@ -181,7 +181,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'عمليات بحث شائعة',
                 style: TextStyle(
                   fontFamily: 'Cairo',
@@ -208,7 +208,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         ),
                         child: Text(
                           term,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: 'Cairo',
                             fontSize: 12.5,
                             fontWeight: FontWeight.w700,
@@ -230,7 +230,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final results = ref.watch(searchProvider(query));
 
     return results.when(
-      loading: () => const Center(child: CircularProgressIndicator(color: QColors.brand)),
+      loading: () => Center(child: CircularProgressIndicator(color: QColors.brand)),
       error: (error, _) => _ErrorView(
         error: error,
         onRetry: () => ref.invalidate(searchProvider(query)),
@@ -252,7 +252,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               padding: const EdgeInsets.symmetric(horizontal: QSpace.screenH),
               child: Text.rich(
                 TextSpan(
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Cairo',
                     fontSize: 13.5,
                     fontWeight: FontWeight.w600,
@@ -301,7 +301,7 @@ class _ErrorView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final err = error;
-    final message = err is ApiException ? err.message : 'حصل خطأ';
+    final message = err is ApiException ? err.message : 'حدث خطأ';
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: QSpace.screenH, vertical: 24),

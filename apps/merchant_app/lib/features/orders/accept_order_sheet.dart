@@ -57,7 +57,7 @@ class _AcceptOrderSheetState extends ConsumerState<_AcceptOrderSheet> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _sending = false);
-      showQSnack(context, 'حصل خطأ، حاول تاني');
+      showQSnack(context, 'حدث خطأ، حاول مرة أخرى');
     }
   }
 
@@ -82,7 +82,7 @@ class _AcceptOrderSheetState extends ConsumerState<_AcceptOrderSheet> {
           const SizedBox(height: 18),
           Row(
             children: [
-              const Text(
+              Text(
                 'قبول الطلب ',
                 style: TextStyle(
                   fontFamily: 'Cairo',

@@ -170,7 +170,7 @@ class _ChartCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   'مبيعات ${period.chartLabel}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Cairo',
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
@@ -195,7 +195,7 @@ class _ChartCard extends StatelessWidget {
           if (series.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 24),
-              child: QEmpty(message: 'مافيش مبيعات في الفترة دي', emoji: '📊'),
+              child: QEmpty(message: 'لا توجد مبيعات في هذه الفترة', emoji: '📊'),
             )
           else ...[
             SizedBox(
@@ -279,7 +279,7 @@ class _TopItemsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'الأصناف الأكثر مبيعاً',
             style: TextStyle(
               fontFamily: 'Cairo',
@@ -292,7 +292,7 @@ class _TopItemsCard extends StatelessWidget {
           if (items.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 16),
-              child: QEmpty(message: 'مافيش أصناف مباعة في الفترة دي', emoji: '🍔'),
+              child: QEmpty(message: 'لا توجد أصناف مباعة في هذه الفترة', emoji: '🍔'),
             )
           else
             for (var i = 0; i < items.length; i++)
@@ -321,7 +321,7 @@ class _TopItemsCard extends StatelessWidget {
                       TextSpan(
                         text: '${items[i].count}',
                         style: QText.num(size: 13.5, color: QColors.label),
-                        children: const [
+                        children: [
                           TextSpan(
                             text: ' طلب',
                             style: TextStyle(
@@ -361,7 +361,7 @@ class _RatingCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   '⭐ تقييم المطعم',
                   style: TextStyle(
                     fontFamily: 'Cairo',
@@ -372,7 +372,7 @@ class _RatingCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  ratingCount == null ? 'لسه ما وصلش تقييمات' : '${fmt.ltr('$ratingCount')} تقييم',
+                  ratingCount == null ? 'لم تصل تقييمات بعد' : '${fmt.ltr('$ratingCount')} تقييم',
                   style: QText.tiny.copyWith(fontWeight: FontWeight.w600),
                 ),
               ],
@@ -381,7 +381,7 @@ class _RatingCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             decoration: BoxDecoration(
-              color: QColors.ink,
+              color: QColors.inkSurface,
               borderRadius: BorderRadius.circular(10),
             ),
             child: QLtr(

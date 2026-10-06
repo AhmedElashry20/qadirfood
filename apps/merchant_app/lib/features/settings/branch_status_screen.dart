@@ -62,7 +62,7 @@ class _BranchStatusScreenState extends ConsumerState<BranchStatusScreen> {
   void _snack(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: QColors.ink,
+        backgroundColor: QColors.inkSurface,
         content: Text(message, style: QText.body.copyWith(color: QColors.brand, fontSize: 14)),
       ),
     );
@@ -88,9 +88,9 @@ class _BranchStatusScreenState extends ConsumerState<BranchStatusScreen> {
       builder: (dialogContext) => AlertDialog(
         backgroundColor: QColors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(QRadius.xl)),
-        title: const Text('إغلاق المطعم؟', style: QText.section),
-        content: const Text(
-          'مش هتستقبل أي طلبات جديدة لحد ما تفتح تاني أو يفتح الفرع حسب جدول الأوقات.',
+        title: Text('إغلاق المطعم؟', style: QText.section),
+        content: Text(
+          'لن تستقبل أي طلبات جديدة حتى تفتح مرة أخرى أو يفتح الفرع حسب جدول الأوقات.',
           style: QText.bodyMuted,
         ),
         actions: [
@@ -115,7 +115,7 @@ class _BranchStatusScreenState extends ConsumerState<BranchStatusScreen> {
     final branch = ref.watch(branchProvider);
 
     return Scaffold(
-      backgroundColor: QColors.ink,
+      backgroundColor: QColors.inkSurface,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -166,7 +166,7 @@ class _BranchStatusScreenState extends ConsumerState<BranchStatusScreen> {
           Text(
             _subtitle(branch),
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Cairo',
               fontSize: 13.5,
               fontWeight: FontWeight.w600,
@@ -225,11 +225,11 @@ class _BranchStatusScreenState extends ConsumerState<BranchStatusScreen> {
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'مشغول Busy Mode',
                       style: TextStyle(
                         fontFamily: 'Cairo',
@@ -238,7 +238,7 @@ class _BranchStatusScreenState extends ConsumerState<BranchStatusScreen> {
                         color: Colors.white,
                       ),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
                       'يضيف +15–30 دقيقة تلقائياً لوقت التحضير',
                       style: TextStyle(
@@ -278,7 +278,7 @@ class _BranchStatusScreenState extends ConsumerState<BranchStatusScreen> {
           const SizedBox(height: 12),
           Row(
             children: [
-              const Text(
+              Text(
                 'الدقايق الإضافية',
                 style: TextStyle(
                   fontFamily: 'Cairo',
@@ -391,11 +391,11 @@ class _BranchStatusScreenState extends ConsumerState<BranchStatusScreen> {
       borderColor: _dangerBorderOnDark,
       child: Row(
         children: [
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'إغلاق المطعم الآن',
                   style: TextStyle(
                     fontFamily: 'Cairo',
@@ -404,7 +404,7 @@ class _BranchStatusScreenState extends ConsumerState<BranchStatusScreen> {
                     color: _dangerOnDark,
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
                   'يفتح تلقائياً حسب جدول الأوقات',
                   style: TextStyle(
@@ -464,8 +464,8 @@ class _StatusDial extends StatelessWidget {
             ? RadialGradient(
                 center: const Alignment(0, -0.2),
                 colors: isOpen
-                    ? const [_dialLight, QColors.brand]
-                    : const [QColors.brand, QColors.goldDeep],
+                    ? [_dialLight, QColors.brand]
+                    : [QColors.brand, QColors.goldDeep],
               )
             : null,
         boxShadow: isOpen
@@ -535,14 +535,14 @@ class _BrandPill extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
           alignment: Alignment.center,
           child: loading
-              ? const SizedBox(
+              ? SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2.2, color: QColors.ink),
                 )
               : Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Cairo',
                     fontSize: 13.5,
                     fontWeight: FontWeight.w800,
@@ -630,7 +630,7 @@ class _DarkError extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Cairo',
                 fontSize: 14,
                 fontWeight: FontWeight.w600,

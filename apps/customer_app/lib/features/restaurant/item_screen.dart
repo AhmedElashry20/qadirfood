@@ -84,7 +84,7 @@ class _ItemScreenState extends ConsumerState<ItemScreen> {
           SnackBar(
             content: Text(
               'أقصى عدد إضافات: ${group.maxSelections}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Cairo',
                 fontSize: 13.5,
                 fontWeight: FontWeight.w800,
@@ -92,7 +92,7 @@ class _ItemScreenState extends ConsumerState<ItemScreen> {
               ),
             ),
             behavior: SnackBarBehavior.floating,
-            backgroundColor: QColors.ink,
+            backgroundColor: QColors.inkSurface,
             duration: const Duration(seconds: 2),
           ),
         );
@@ -122,14 +122,14 @@ class _ItemScreenState extends ConsumerState<ItemScreen> {
   @override
   Widget build(BuildContext context) {
     return ref.watch(restaurantProvider(widget.restaurantId)).when(
-          loading: () => const Scaffold(
+          loading: () => Scaffold(
             backgroundColor: QColors.surface,
             body: Center(child: CircularProgressIndicator(color: QColors.brand)),
           ),
-          error: (error, _) => _error(error is ApiException ? error.message : 'حصل خطأ'),
+          error: (error, _) => _error(error is ApiException ? error.message : 'حدث خطأ'),
           data: (restaurant) {
             final item = _itemIn(restaurant);
-            if (item == null) return _error('الصنف مش موجود في المنيو');
+            if (item == null) return _error('الصنف غير موجود في القائمة');
 
             _preselectRequired(item);
             return _loaded(restaurant, item);
@@ -177,9 +177,9 @@ class _ItemScreenState extends ConsumerState<ItemScreen> {
           Expanded(
             child: Container(
               transform: Matrix4.translationValues(0, -24, 0),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: QColors.surface,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(QRadius.sheet)),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(QRadius.sheet)),
               ),
               clipBehavior: Clip.antiAlias,
               child: ListView(
@@ -191,7 +191,7 @@ class _ItemScreenState extends ConsumerState<ItemScreen> {
                       Expanded(
                         child: Text(
                           item.name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: 'Cairo',
                             fontSize: 20,
                             fontWeight: FontWeight.w900,
@@ -227,7 +227,7 @@ class _ItemScreenState extends ConsumerState<ItemScreen> {
         ],
       ),
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: QColors.surface,
           border: Border(top: BorderSide(color: QColors.line)),
         ),
@@ -247,7 +247,7 @@ class _ItemScreenState extends ConsumerState<ItemScreen> {
                   ),
                   child: Text(
                     'المطعم مغلق حالياً — ${restaurant.opensAtLabel ?? ''}'.trim(),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Cairo',
                       fontSize: 13.5,
                       fontWeight: FontWeight.w800,

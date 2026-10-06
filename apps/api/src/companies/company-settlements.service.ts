@@ -41,15 +41,15 @@ export class CompanySettlementsService {
   private scopeCompanyId(user: AuthUser, requested?: string): string | undefined {
     if (user.role === UserRole.ADMIN) return requested;
     if (user.role === UserRole.COMPANY) {
-      if (!user.companyId) throw new ForbiddenException('الجلسة مش مربوطة بشركة');
-      if (requested && requested !== user.companyId) throw new ForbiddenException('مش مسموح لك بشركة تانية');
+      if (!user.companyId) throw new ForbiddenException('الجلسة غير مرتبطة بشركة');
+      if (requested && requested !== user.companyId) throw new ForbiddenException('غير مسموح لك بشركة أخرى');
       return user.companyId;
     }
-    throw new ForbiddenException('غير مصرح');
+    throw new ForbiddenException('غير مصرَّح لك');
   }
 
   async run(user: AuthUser, dto: RunCompanySettlementDto) {
-    if (user.role !== UserRole.ADMIN) throw new ForbiddenException('تشغيل التسويات للأدمن بس');
+    if (user.role !== UserRole.ADMIN) throw new ForbiddenException('تشغيل التسويات متاحة للإدارة فقط');
 
     const periodEnd = dto.periodEnd ? new Date(dto.periodEnd) : new Date();
     if (Number.isNaN(periodEnd.getTime())) throw new BadRequestException('تاريخ نهاية الفترة غير صحيح');
@@ -144,13 +144,13 @@ export class CompanySettlementsService {
   }
 
   async transfer(user: AuthUser, id: string, dto: TransferCompanySettlementDto) {
-    if (user.role !== UserRole.ADMIN) throw new ForbiddenException('التحويل للأدمن بس');
+    if (user.role !== UserRole.ADMIN) throw new ForbiddenException('التحويل متاح للإدارة فقط');
 
     return this.prisma.$transaction(async (tx) => {
       const [row] = await tx.$queryRaw<{ id: string; status: SettlementStatus }[]>`
         SELECT id, status FROM company_settlements WHERE id = ${id} FOR UPDATE`;
       if (!row) throw new NotFoundException('التسوية غير موجودة');
-      if (row.status === SettlementStatus.TRANSFERRED) throw new ConflictException('التسوية متحوّلة خلاص');
+      if (row.status === SettlementStatus.TRANSFERRED) throw new ConflictException('التسوية محوَّلة بالفعل');
 
       const updated = await tx.companySettlement.update({
         where: { id },
@@ -272,7 +272,7 @@ export class CompanySettlementsService {
     });
     if (!dist) throw new NotFoundException('صف التوزيع غير موجود');
     this.scopeCompanyId(user, dist.companySettlement.companyId);
-    if (dist.status === DistributionStatus.PAID) throw new ConflictException('اتسجّل مدفوع خلاص');
+    if (dist.status === DistributionStatus.PAID) throw new ConflictException('سُجِّل مدفوعاً بالفعل');
 
     const updated = await this.prisma.captainDistribution.update({
       where: { id: distributionId },
@@ -302,7 +302,7 @@ export class CompanySettlementsService {
   }
 
   async savePayoutAccount(user: AuthUser, companyId: string, dto: SaveCompanyPayoutAccountDto) {
-    if (user.role !== UserRole.ADMIN) throw new ForbiddenException('حساب الاستلام بيتحدّد من الأدمن');
+    if (user.role !== UserRole.ADMIN) throw new ForbiddenException('حساب الاستلام تحدّده الإدارة');
     const company = await this.prisma.company.findUnique({ where: { id: companyId } });
     if (!company) throw new NotFoundException('الشركة غير موجودة');
 

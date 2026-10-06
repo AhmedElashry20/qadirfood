@@ -45,14 +45,14 @@ class BillSummary extends StatelessWidget {
               color: QColors.success,
             ),
           ],
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 10),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
             child: Divider(color: QColors.line, height: 1),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'الإجمالي',
                 style: TextStyle(
                   fontFamily: 'Cairo',

@@ -103,7 +103,7 @@ const PAGE_SIZE = 100;
 // ────────────────────────────────────────────────────────────
 // الصفحة
 //
-// مافيش endpoint أدمن بيرجّع المطاعم أو الفروع (app.module.ts مافيهوش أي
+// لا يوجد endpoint أدمن بيرجّع المطاعم أو الفروع (app.module.ts مافيهوش أي
 // مسار إداري للمطاعم؛ `/customer/branches` للعميل بس و`/restaurants/nearby`
 // محتاج إحداثيات). فبنشتق الفروع المميّزة من الطلبات، وبنكمّل تفاصيل كل فرع
 // من `GET /restaurants/branches/:id` — دي مفتوحة لأي دور مسجّل دخول.
@@ -211,8 +211,8 @@ export default function Restaurants() {
                 ) : rows.length === 0 ? (
                   <EmptyState
                     icon="🍔"
-                    title={search ? 'مافيش نتائج للبحث' : 'مافيش فروع في العيّنة دي'}
-                    description={`القائمة مشتقة من فروع آخر ${PAGE_SIZE} طلب — مافيش endpoint بيرجّع كل المطاعم.`}
+                    title={search ? 'لا توجد نتائج للبحث' : 'لا توجد فروع في هذه العيّنة'}
+                    description={`القائمة مشتقة من فروع آخر ${PAGE_SIZE} طلب — لا يوجد endpoint بيرجّع كل المطاعم.`}
                   />
                 ) : (
                   rows.map((row) => {

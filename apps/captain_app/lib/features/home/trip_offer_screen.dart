@@ -104,7 +104,7 @@ class _TripOfferScreenState extends ConsumerState<TripOfferScreen> {
         return;
       }
 
-      _snack(context, 'الطلب راح لكابتن تاني');
+      _snack(context, 'أُسنِد الطلب لكابتن آخر');
       if (context.canPop()) context.pop();
     } on ApiException catch (e) {
       if (!context.mounted) return;
@@ -145,14 +145,14 @@ class _TripOfferScreenState extends ConsumerState<TripOfferScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted && context.canPop()) context.pop();
       });
-      return const Scaffold(backgroundColor: QColors.ink);
+      return Scaffold(backgroundColor: QColors.inkSurface);
     }
 
     final center =
         current.pickupPoint ?? ref.read(locationBroadcasterProvider).lastKnown ?? kRiyadh;
 
     return Scaffold(
-      backgroundColor: QColors.ink,
+      backgroundColor: QColors.inkSurface,
       body: Stack(
         children: [
           Positioned.fill(
@@ -173,9 +173,9 @@ class _TripOfferScreenState extends ConsumerState<TripOfferScreen> {
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(24, 22, 24, 30),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: QColors.surface,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
                 boxShadow: kFloatShadow,
               ),
               child: SafeArea(
@@ -201,11 +201,11 @@ void _snack(BuildContext context, String message) {
     ..hideCurrentSnackBar()
     ..showSnackBar(
       SnackBar(
-        backgroundColor: QColors.ink,
+        backgroundColor: QColors.inkSurface,
         behavior: SnackBarBehavior.floating,
         content: Text(
           message,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Cairo',
             fontSize: 13.5,
             fontWeight: FontWeight.w700,

@@ -1,4 +1,12 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  type OnModuleInit,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   ItemAvailability,
@@ -27,6 +35,15 @@ import {
   ListOrdersDto,
 } from './orders.dto';
 import { canTransition } from './order-transitions';
+import { RoutingService } from '../routing/routing.service';
+import { isOnlineMethod } from '../payments/payments.service';
+import { LoyaltyService } from '../customer/loyalty.service';
+import { cappedDiscount } from '../customer/loyalty-math';
+import {
+  releaseAt,
+  scheduleRejectionMessage,
+  validateScheduleTime,
+} from './scheduling';
 import { computeOrderTotals } from './order-pricing';
 import type { AuthUser } from '../common';
 
@@ -51,8 +68,10 @@ interface GeoPoint {
 }
 
 @Injectable()
-export class OrdersService {
+export class OrdersService implements OnModuleInit {
   private readonly logger = new Logger(OrdersService.name);
+  /** مؤقتات إطلاق الطلبات المجدولة — في الذاكرة، بتتعاد عند الإقلاع. */
+  private readonly releaseTimers = new Map<string, NodeJS.Timeout>();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -62,6 +81,8 @@ export class OrdersService {
     private readonly captains: CaptainsService,
     private readonly payments: PaymentsService,
     private readonly zones: ZonesService,
+    private readonly routing: RoutingService,
+    private readonly loyalty: LoyaltyService,
     private readonly notifications: NotificationsService,
   ) {}
 
@@ -208,6 +229,11 @@ export class OrdersService {
       // رابط الدفع الإلكتروني (لو الطلب بطاقة ومحتاج يفتح صفحة الدفع). `null`
       // للكاش أو لو التحصيل خلص فوراً.
       checkoutUrl,
+      /**
+       * مجدول ولسه ماوصلش المطعم. من غير الحقل ده التطبيق بيعرض «بانتظار قبول
+       * المطعم» لطلب مجدول لبكرة — العميل يفتكر إن فيه مشكلة ويتصل بالدعم.
+       */
+      awaitingRelease: !!order.scheduledFor && !order.releasedAt,
       subtotal: Number(order.subtotal),
       deliveryFee: Number(order.deliveryFee),
       discount: Number(order.discount),
@@ -271,7 +297,12 @@ export class OrdersService {
     const address = await this.prisma.address.findFirst({ where: { id: dto.addressId, customerId } });
     if (!address) throw new NotFoundException('العنوان غير موجود');
 
-    // تحقق إن العنوان جوه نطاق توصيل الفرع
+    // تحقق إن العنوان جوه نطاق توصيل الفرع.
+    //
+    // **بيفضل مسافة هوائية عن قصد** — مايتحوّلش لمسافة طريق (`RoutingService`).
+    // `deliveryRadiusKm` نصف قطر دايرة، ومسافة الطريق أطول من الهوائية ~٣٠٪،
+    // فاستخدامها هنا بيقلّص تغطية كل فرع بنفس النسبة في صمت. مسافة الطريق
+    // مكانها في حساب المستحق (`DispatchService`) مش في فحص التغطية.
     const branchPoint = await this.prisma.getPoint('branches', 'location', branch.id);
     const addressPoint = await this.prisma.getPoint('addresses', 'location', address.id);
     if (branchPoint && addressPoint) {
@@ -364,7 +395,7 @@ export class OrdersService {
         (!coupon.usageLimit || coupon.usedCount < coupon.usageLimit) &&
         subtotal.gte(new Decimal(coupon.minOrderTotal.toString()));
 
-      if (!valid) throw new BadRequestException('الكوبون غير صالح أو منتهي');
+      if (!valid) throw new BadRequestException('الكوبون غير صالح أو منتهي الصلاحية');
 
       discount = coupon!.percentOff
         ? subtotal.times(coupon!.percentOff).dividedBy(100)
@@ -375,6 +406,27 @@ export class OrdersService {
       }
       couponId = coupon!.id;
     }
+
+    // ── استبدال نقاط الولاء ──
+    // قيمة النقاط بتتحوّل لريال وبتنضاف على خصم الكوبون، فبتمشي في **نفس**
+    // مسار الخصم المختبَر: الضريبة والعمولة بيتحسبوا صح من غير فرع خاص.
+    //
+    // السقف = المجموع ناقص خصم الكوبون: من غيره كوبون كبير + نقاط كتير بيخلّوا
+    // الوعاء الخاضع للضريبة سالب، فالضريبة تطلع سالبة والإجمالي يقلب لصالح العميل.
+    let pointsRedeemed = 0;
+    if (dto.redeemPoints && dto.redeemPoints > 0) {
+      const headroom = cappedDiscount(subtotal, subtotal.minus(discount));
+      const quote = await this.loyalty.quoteRedemption(customerId, dto.redeemPoints, headroom);
+      if (quote.points <= 0) {
+        throw new BadRequestException('النقاط غير كافية أو أقل من الحد الأدنى للاستبدال');
+      }
+      pointsRedeemed = quote.points;
+      discount = discount.plus(quote.discountSar);
+    }
+
+    // سقف أخير على الخصم الكلي — حارس يشمل الكوبون لوحده كمان: كوبون بمبلغ
+    // ثابت أكبر من السلة كان بيقدر يخلّي الخصم أكبر من المجموع.
+    discount = cappedDiscount(subtotal, discount);
 
     // رسوم التوصيل: منطقة عنوان العميل بتغلب — لو النقطة جوّه منطقة مفعّلة،
     // رسومها هي المصدر؛ وإلا رسوم الفرع؛ وإلا الافتراضي من الـ env.
@@ -397,6 +449,35 @@ export class OrdersService {
       commissionRate: restaurant!.commissionRate.toString(),
     });
 
+    // ── الإكرامية ──
+    // للدفع الإلكتروني بس: إكرامية على طلب كاش مالهاش مسار تحصيل — العميل
+    // بيسلّمها في اليد للمندوب، والمنصة مالهاش دور. لو قبلناها كنا هنقيّد
+    // للمندوب فلوس ماحصّلناهاش.
+    const tipAmount = new Decimal(dto.tipAmount ?? 0);
+    if (tipAmount.greaterThan(0) && !isOnlineMethod(dto.paymentMethod)) {
+      throw new BadRequestException('الإكرامية متاحة للدفع الإلكتروني فقط — أما الدفع نقداً فيُسلَّم للمندوب مباشرة');
+    }
+
+    // ── الجدولة ──
+    // وقت التسليم اللي العميل طلبه بيتحقّق من قواعد نقية (`scheduling.ts`)،
+    // وبعدين بنحسب وقت إطلاق الطلب للمطعم: التسليم − (تحضير الفرع + التوصيل).
+    // مسافة الطريق بتيجي من `RoutingService` عشان التقدير يبقى على الطريق
+    // الفعلي — التقدير الهوائي كان بيقصّر وقت التوصيل فالطلب يتطلق متأخر.
+    let scheduledFor: Date | null = null;
+    let planRelease: Date | null = null;
+    if (dto.scheduledFor) {
+      const now = new Date();
+      scheduledFor = new Date(dto.scheduledFor);
+      const rejection = validateScheduleTime(scheduledFor, now);
+      if (rejection) throw new BadRequestException(scheduleRejectionMessage(rejection));
+
+      const travelMinutes =
+        branchPoint && addressPoint
+          ? (await this.routing.route(branchPoint, addressPoint)).durationMinutes
+          : 0;
+      planRelease = releaseAt(scheduledFor, branch.avgPrepMinutes, travelMinutes, now);
+    }
+
     // إعادة محاولة عند تصادم رقم الطلب: generateOrderNumber بيعتمد على count()
     // اللي بيتسابق تحت التزامن، فعميلين في نفس اللحظة ممكن ياخدوا نفس الرقم.
     // بدل ما طلب العميل يفشل، بنمسك تصادم القيد الفريد ونعيد برقم مختلف.
@@ -407,6 +488,7 @@ export class OrdersService {
         order = await this.createOrderTx(orderNumberAttempt, {
           customerId, branch, address, couponId, dto, itemsData,
           subtotal, deliveryFee, discount, vat, total, commission,
+          scheduledFor, releaseAt: planRelease, tipAmount, pointsRedeemed,
           // الوجهة داخل منطقة حرم ⇒ الطلب محتاج تسليم بالتناوب (مندوب لمندوب).
           requiresRelay: zone?.type === 'HARAM',
         });
@@ -425,9 +507,17 @@ export class OrdersService {
       }
     }
 
-    // إشعار الفرع لحظياً — ده اللي بيشغّل صوت التنبيه في تطبيق المطعم
-    this.gateway.emitNewOrder(order);
-    this.scheduleUnansweredAlert(order.id);
+    // طلب مجدول مايوصلش المطعم دلوقتي: بيفضل PENDING ومخفي لحد وقت الإطلاق
+    // (وقت التسليم − تحضير − توصيل). إشعار المطعم ومؤقت «مالوش رد» الاتنين
+    // بيتأجّلوا معاه، وإلا المطعم بياخد تنبيه لطلب ملوش داعي يشتغل عليه دلوقتي
+    // وبعد ٣ دقايق يتسجّل إنه «مردّش».
+    if (order.scheduledFor) {
+      this.scheduleRelease(order.id, order.releaseAt ?? new Date());
+    } else {
+      // إشعار الفرع لحظياً — ده اللي بيشغّل صوت التنبيه في تطبيق المطعم
+      this.gateway.emitNewOrder(order);
+      this.scheduleUnansweredAlert(order.id);
+    }
 
     // التحصيل بعد الـ commit مش جواه: نداء شبكة لبوابة خارجية جوه transaction
     // بيقفل صف الطلب طول ما البوابة بتفكّر. وفشله مالهوش يسقّط طلب اتعمل خلاص.
@@ -448,7 +538,12 @@ export class OrdersService {
     attempt: number,
     p: {
       customerId: string;
-      branch: { id: string; restaurantId: string; deliveryFee: Prisma.Decimal | null };
+      branch: {
+        id: string;
+        restaurantId: string;
+        deliveryFee: Prisma.Decimal | null;
+        avgPrepMinutes: number;
+      };
       address: { id: string };
       couponId: string | null | undefined;
       dto: CreateOrderDto;
@@ -459,6 +554,10 @@ export class OrdersService {
       vat: Decimal;
       total: Decimal;
       commission: Decimal;
+      scheduledFor: Date | null;
+      releaseAt: Date | null;
+      tipAmount: Decimal;
+      pointsRedeemed: number;
       requiresRelay: boolean;
     },
   ) {
@@ -484,6 +583,10 @@ export class OrdersService {
           commission: commission.toFixed(2),
           paymentMethod: dto.paymentMethod,
           paymentStatus: PaymentStatus.PENDING,
+          scheduledFor: p.scheduledFor,
+          releaseAt: p.releaseAt,
+          tipAmount: p.tipAmount.toFixed(2),
+          pointsRedeemed: p.pointsRedeemed,
           customerNotes: dto.customerNotes,
           requiresRelay,
           items: { create: itemsData },
@@ -492,8 +595,29 @@ export class OrdersService {
       });
 
       await tx.orderEvent.create({
-        data: { orderId: created.id, status: OrderStatus.PENDING, actorId: customerId, actorRole: UserRole.CUSTOMER },
+        // `actorId` = معرّف **المستخدم** في كل الأحداث. كان بيتكتب هنا
+        // `customerId` (معرّف جدول العملاء) وفي مسارات تانية `userId`، فأي
+        // تايم لاين بيحلّ الأسماء كان بيطلّع اسم غلط أو فاضي.
+        data: {
+          orderId: created.id,
+          status: OrderStatus.PENDING,
+          actorId: created.customer.userId,
+          actorRole: UserRole.CUSTOMER,
+        },
       });
+
+      // خصم نقاط الولاء **جوه معاملة الطلب**: لو الطلب فشل بعد الخصم (تصادم
+      // رقم، كوبون خلص)، النقاط ترجع معاه. الخصم برّه المعاملة كان هيسيب العميل
+      // خاسر نقاطه بلا طلب.
+      if (p.pointsRedeemed > 0) {
+        await this.loyalty.debitRedemption(
+          customerId,
+          created.id,
+          p.pointsRedeemed,
+          created.orderNumber,
+          tx,
+        );
+      }
 
       if (couponId) {
         // زيادة ذرّية مشروطة: بنزوّد العدّاد بس لو لسه تحت الحد (أو مافيش حد).
@@ -568,8 +692,12 @@ export class OrdersService {
       `وقت التحضير: ${prepMinutes} دقيقة`,
     );
 
-    // جدولة البحث عن كابتن: يوصل المطعم والطلب جاهز — لا الكابتن يستنى ولا الأكل يبرد
-    this.dispatch.scheduleDispatch(orderId, prepMinutes);
+    // جدولة البحث عن كابتن: يوصل المطعم والطلب جاهز — لا الكابتن يستنى ولا الأكل يبرد.
+    // الجدولة بقت async (بتقرا الإعدادات من اللوحة) — بنمسك الخطأ عشان Promise
+    // مرفوض من غير معالجة بيقتل السيرفر.
+    void this.dispatch.scheduleDispatch(orderId, prepMinutes).catch((e) =>
+      this.logger.error(`فشل جدولة توزيع الطلب ${orderId}: ${(e as Error).message}`),
+    );
 
     return updated;
   }
@@ -727,6 +855,35 @@ export class OrdersService {
       await this.captains.creditTripPayout(order.footCaptainId, order.id, Number(footPayout.toFixed(2)));
     }
 
+    // ── الإكرامية ──
+    // بتروح للمندوب اللي سلّم للعميل فعلاً: مندوب المشي لو الطلب بالتناوب،
+    // وإلا مندوب المركبة. اللي وصل للباب هو اللي العميل كرّمه.
+    //
+    // بتتقيّد للمندوب **حتى لو تابع لشركة**، بخلاف أجرة الرحلة اللي بتتجمّع في
+    // تسوية الشركة: الإكرامية تكريم شخصي مش إيراد تشغيلي للشركة.
+    //
+    // بشرط إن الفلوس اتحصّلت فعلاً — إكرامية على دفع فشل مالهاش مصدر.
+    const tip = Number(order.tipAmount);
+    const tipRecipient = order.footCaptainId ?? order.captainId;
+    if (tip > 0 && tipRecipient && updated.paymentStatus === PaymentStatus.PAID) {
+      await this.captains.creditTip(tipRecipient, order.id, tip);
+    }
+
+    // ── نقاط الولاء ومكافأة الإحالة ──
+    // بعد التسليم بس: نقاط على طلب لسه في الطريق معناها نقاط على طلب ممكن
+    // يتلغى. الاتنين idempotent، فتسليم مكرر مايضاعفش حاجة.
+    //
+    // فشلهم مايوقّعش التسليم: الطلب وصل للعميل فعلاً، ومايصحش سطر نقاط يرجّع
+    // حالة الطلب. بيتسجّل في اللوج عشان يتراجع.
+    try {
+      await this.loyalty.creditEarned(order.customerId, order.id, order.subtotal, order.orderNumber);
+      await this.loyalty.rewardReferral(order.customerId, order.id, order.orderNumber);
+    } catch (error) {
+      this.logger.error(
+        `فشل تسجيل نقاط الولاء للطلب ${order.orderNumber}: ${(error as Error).message}`,
+      );
+    }
+
     return updated;
   }
 
@@ -745,7 +902,7 @@ export class OrdersService {
         throw new BadRequestException('لا يمكن إلغاء الطلب بعد قبوله من المطعم');
       }
     } else if (user.role !== UserRole.ADMIN) {
-      throw new ForbiddenException('غير مصرح بالإلغاء');
+      throw new ForbiddenException('غير مصرَّح لك بالإلغاء');
     }
 
     const updated = await this.transition(
@@ -765,9 +922,33 @@ export class OrdersService {
     );
     if (refund) this.logger.log(`استرداد ${refund.amount} ر.س للطلب الملغي ${order.orderNumber}`);
 
+    // نقاط الولاء المستبدلة ترجع: العميل ماخدش الخصم فعلاً. بسطر `REVERSAL`
+    // منفصل مش بحذف سطر الاستبدال — الدفتر مابيتعدّلش بأثر رجعي.
+    if (order.pointsRedeemed > 0) {
+      try {
+        await this.loyalty.reverseRedemption(
+          order.customerId,
+          orderId,
+          order.pointsRedeemed,
+          order.orderNumber,
+        );
+      } catch (error) {
+        this.logger.error(
+          `فشل رجوع نقاط الطلب الملغي ${order.orderNumber}: ${(error as Error).message}`,
+        );
+      }
+    }
+
     // لو الطلب كان لسه في التوزيع، ألغي مؤقت البحث عن كابتن — مايفضلش يدوّر على
     // كابتن لطلب اتلغى.
     this.dispatch.cancelDispatch(orderId);
+    // مؤقت إطلاق الطلب المجدول: `releaseScheduledOrder` بترفض أي طلب مش PENDING
+    // فالإلغاء آمن من غير التنضيف ده، بس مافيش داعي نسيب مؤقت شغّال لطلب ميت.
+    const releaseTimer = this.releaseTimers.get(orderId);
+    if (releaseTimer) {
+      clearTimeout(releaseTimer);
+      this.releaseTimers.delete(orderId);
+    }
 
     // كان عليه كابتن في مهمة → رجّعه متاح (المركبة + المشي في التناوب). من غير
     // ده الكابتن بيفضل ON_TRIP للأبد فمش هياخد عروض جديدة. الشرط على الحالة عشان
@@ -817,25 +998,47 @@ export class OrdersService {
     // **fail-closed**: أي دور مش متعامَل معاه صراحةً بيتمنع بدل ما يشوف كل الطلبات
     // (كان دور COMPANY وأي دور جديد بيتسرّبله كل طلبات المنصة).
     if (user.role === UserRole.MERCHANT) {
-      if (!user.branchId) throw new ForbiddenException('الجلسة مش مربوطة بفرع');
+      if (!user.branchId) throw new ForbiddenException('الجلسة غير مرتبطة بفرع');
       where.branchId = user.branchId;
     } else if (user.role === UserRole.CUSTOMER) {
-      if (!user.customerId) throw new ForbiddenException('الجلسة مش مربوطة بحساب عميل');
+      if (!user.customerId) throw new ForbiddenException('الجلسة غير مرتبطة بحساب عميل');
       where.customerId = user.customerId;
     } else if (user.role === UserRole.CAPTAIN) {
-      if (!user.captainId) throw new ForbiddenException('الجلسة مش مربوطة بحساب كابتن');
+      if (!user.captainId) throw new ForbiddenException('الجلسة غير مرتبطة بحساب كابتن');
       where.captainId = user.captainId;
     } else if (user.role === UserRole.COMPANY) {
       // شركة الأسطول بتشوف طلبات مناديبها بس.
-      if (!user.companyId) throw new ForbiddenException('الجلسة مش مربوطة بشركة');
+      if (!user.companyId) throw new ForbiddenException('الجلسة غير مرتبطة بشركة');
       where.captain = { companyId: user.companyId };
     } else if (user.role === UserRole.ADMIN) {
       if (query.branchId) where.branchId = query.branchId;
     } else {
-      throw new ForbiddenException('غير مصرح');
+      throw new ForbiddenException('غير مصرَّح لك');
     }
 
     if (query.status?.length) where.status = { in: query.status };
+
+    // بحث نصي — رقم الطلب أو اسم/جوال العميل أو اسم الكابتن أو اسم الفرع.
+    // بيتحط في `AND` مش في `where.OR` عشان مايكتبش فوق شروط الدور: دور
+    // COMPANY بيستخدم `where.captain`، ولو البحث حطّ `OR` على مستوى أعلى كان
+    // ممكن يوسّع النتيجة لبرّه نطاق الشركة — تسريب بيانات.
+    const q = query.q?.trim();
+    if (q) {
+      const like = { contains: q, mode: Prisma.QueryMode.insensitive };
+      const existing = Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : [];
+      where.AND = [
+        ...existing,
+        {
+          OR: [
+            { orderNumber: like },
+            { customer: { user: { fullName: like } } },
+            { customer: { user: { phone: like } } },
+            { captain: { user: { fullName: like } } },
+            { branch: { nameAr: like } },
+          ],
+        },
+      ];
+    }
     if (query.from || query.to) {
       where.placedAt = {
         ...(query.from ? { gte: new Date(query.from) } : {}),
@@ -875,13 +1078,113 @@ export class OrdersService {
     return { data, total, page, pageSize };
   }
 
+  /**
+   * سجل أحداث الطلب — «مين عمل إيه وامتى».
+   *
+   * `order_events` كان بيتسجّل ومابيترجعش، فالتايم لاين في اللوحة كان مبني من
+   * أعمدة الوقت في الطلب نفسه: بيقول إن الحالة اتغيّرت، مش مين غيّرها. ده
+   * المصدر الحقيقي، وبيشمل الأحداث اللي مالهاش عمود (زي الإسناد اليدوي).
+   *
+   * فحص الصلاحية بيتم بـ `findOne` — نفس قواعد عرض الطلب بالظبط، عشان
+   * مايبقاش فيه مسار تاني بقواعد أضعف.
+   */
+  async events(user: AuthUser, orderId: string) {
+    await this.findOne(user, orderId);
+
+    const events = await this.prisma.orderEvent.findMany({
+      where: { orderId },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    // أسماء الفاعلين في استعلام واحد لكل السجل — مش استعلام لكل حدث.
+    const actorIds = [...new Set(events.map((e) => e.actorId).filter((id): id is string => !!id))];
+    const actors = actorIds.length
+      ? await this.prisma.user.findMany({
+          where: { id: { in: actorIds } },
+          select: { id: true, fullName: true },
+        })
+      : [];
+    const names = new Map(actors.map((a) => [a.id, a.fullName]));
+
+    return events.map((e) => ({
+      id: e.id,
+      status: e.status,
+      actorId: e.actorId,
+      actorRole: e.actorRole,
+      /** null لو الفاعل هو النظام، أو لو المستخدم اتحذف بعد الحدث. */
+      actorName: e.actorId ? (names.get(e.actorId) ?? null) : null,
+      note: e.note,
+      createdAt: e.createdAt,
+    }));
+  }
+
   /** الطلبات الواردة (شاشة ٢ في تطبيق المطعم) — الجديدة اللي لسه مردودش عليها. */
   async incomingForBranch(branchId: string) {
     return this.prisma.order.findMany({
-      where: { branchId, status: OrderStatus.PENDING },
+      where: {
+        branchId,
+        status: OrderStatus.PENDING,
+        // الطلب المجدول اللي لسه ماتطلقش مش «وارد» — بيظهر للمطعم وقت الإطلاق
+        // بس. من غير الشرط ده كل الطلبات المجدولة تبان في شاشة الواردة فوراً
+        // وتفضل هناك أيام.
+        OR: [{ scheduledFor: null }, { releasedAt: { not: null } }],
+      },
       include: this.orderInclude(),
       orderBy: { placedAt: 'asc' },
     });
+  }
+
+  /**
+   * إطلاق طلب مجدول للمطعم — نفس اللي بيحصل لحظة إنشاء طلب فوري، بس متأخر.
+   *
+   * idempotent: الإطلاق المتكرر (مؤقت اشتغل + دورة الاسترجاع لقيته) مابيبعتش
+   * إشعارين، لأن `releasedAt` بيتحدّث مرة واحدة بشرط إنه لسه فاضي.
+   */
+  private async releaseScheduledOrder(orderId: string): Promise<void> {
+    const updated = await this.prisma.order.updateMany({
+      where: { id: orderId, status: OrderStatus.PENDING, releasedAt: null },
+      data: { releasedAt: new Date() },
+    });
+    if (updated.count === 0) return; // اتطلق قبل كده، أو اتلغى
+
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: this.orderInclude(),
+    });
+    if (!order) return;
+
+    this.logger.log(`إطلاق الطلب المجدول ${order.orderNumber} للمطعم`);
+    this.gateway.emitNewOrder(order);
+    this.scheduleUnansweredAlert(order.id);
+  }
+
+  /** مؤقت الإطلاق في الذاكرة — بيتعاد بناؤه عند الإقلاع من `releasedAt`. */
+  private scheduleRelease(orderId: string, at: Date) {
+    const delay = Math.max(0, at.getTime() - Date.now());
+    const timer = setTimeout(() => {
+      this.releaseTimers.delete(orderId);
+      void this.releaseScheduledOrder(orderId).catch((e) =>
+        this.logger.error(`فشل إطلاق الطلب المجدول ${orderId}: ${(e as Error).message}`),
+      );
+    }, delay);
+    this.releaseTimers.set(orderId, timer);
+  }
+
+  /**
+   * بعد إعادة تشغيل السيرفر مؤقتات الإطلاق بتضيع، فطلب مجدول كان مستني
+   * بيفضل مخفي عن المطعم **للأبد** والعميل يستنى أكل مش جاي. بنعيد جدولة كل
+   * الطلبات المجدولة اللي لسه ماتطلقتش عند الإقلاع — ونطلق فوراً اللي وقته فات
+   * وإحنا واقعين.
+   */
+  async onModuleInit() {
+    const pending = await this.prisma.order.findMany({
+      where: { status: OrderStatus.PENDING, scheduledFor: { not: null }, releasedAt: null },
+      select: { id: true, releaseAt: true },
+    });
+    for (const o of pending) this.scheduleRelease(o.id, o.releaseAt ?? new Date());
+    if (pending.length) {
+      this.logger.log(`أعيد جدولة إطلاق ${pending.length} طلب مجدول بعد إعادة التشغيل`);
+    }
   }
 
   /** الطلبات الجارية (شاشة ٤) — من القبول لحد الاستلام. */
@@ -920,9 +1223,9 @@ export class OrdersService {
     });
     if (!order) throw new NotFoundException('الطلب غير موجود');
     if (order.status !== OrderStatus.DELIVERED) {
-      throw new BadRequestException('ما ينفع تقيّم طلب لسه ما وصلش');
+      throw new BadRequestException('لا يمكن تقييم طلب لم يُسلَّم بعد');
     }
-    if (order.review) throw new BadRequestException('قيّمت الطلب ده قبل كده');
+    if (order.review) throw new BadRequestException('قيّمت هذا الطلب مسبقاً');
 
     const captainStars = dto.captainStars;
     const captainId = order.captainId;
@@ -972,7 +1275,7 @@ export class OrdersService {
     } catch (error) {
       // سباق بين طلبين تقييم في نفس اللحظة — القيد الفريد على orderId هو الحكم
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new BadRequestException('قيّمت الطلب ده قبل كده');
+        throw new BadRequestException('قيّمت هذا الطلب مسبقاً');
       }
       throw error;
     }

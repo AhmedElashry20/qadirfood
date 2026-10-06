@@ -45,7 +45,7 @@ export default function Login() {
         throw new Error('رد غير متوقع من السيرفر — تواصل مع الدعم');
       }
       if (data.user.role !== 'ADMIN') {
-        throw new Error('هذا الحساب مش أدمن — لوحة الأدمن للمديرين بس');
+        throw new Error('هذا الحساب ليس حساب إدارة — لوحة الإدارة للمديرين فقط');
       }
 
       return data;

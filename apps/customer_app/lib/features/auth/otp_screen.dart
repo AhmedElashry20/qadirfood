@@ -130,7 +130,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
             children: [
               const QBackButton(),
               const SizedBox(height: 24),
-              const Text('أدخل رمز التحقق', style: QText.display),
+              Text('أدخل رمز التحقق', style: QText.display),
               const SizedBox(height: 8),
               Text.rich(
                 TextSpan(
@@ -185,8 +185,8 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                     : InkWell(
                         onTap: _resend,
                         borderRadius: BorderRadius.circular(QRadius.sm),
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           child: Text(
                             'إعادة إرسال الرمز',
                             style: TextStyle(
@@ -206,7 +206,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                   label: _verifying ? 'جاري التحقق…' : 'تأكيد',
                   enabled: _complete && !_verifying,
                   leading: _verifying
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 16,
                           height: 16,
                           child: CircularProgressIndicator(strokeWidth: 2, color: QColors.ink),
@@ -229,11 +229,11 @@ void _snack(BuildContext context, String message) {
     ..hideCurrentSnackBar()
     ..showSnackBar(
       SnackBar(
-        backgroundColor: QColors.ink,
+        backgroundColor: QColors.inkSurface,
         behavior: SnackBarBehavior.floating,
         content: Text(
           message,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Cairo',
             fontSize: 13.5,
             fontWeight: FontWeight.w700,
@@ -266,7 +266,7 @@ class _DevCodeHint extends StatelessWidget {
         child: Text.rich(
           TextSpan(
             text: 'رمز التطوير: ',
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Cairo',
               fontSize: 12.5,
               fontWeight: FontWeight.w700,

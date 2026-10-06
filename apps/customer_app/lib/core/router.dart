@@ -9,6 +9,9 @@ import '../features/account/raise_ticket_screen.dart';
 import '../features/account/settings_screen.dart';
 import '../features/account/support_screen.dart';
 import '../features/account/ticket_detail_screen.dart';
+import '../features/tracking/order_chat_screen.dart';
+import '../features/account/loyalty_screen.dart';
+import '../features/account/referral_screen.dart';
 import '../features/account/wallet_screen.dart';
 import '../features/auth/complete_profile_screen.dart';
 import '../features/auth/login_screen.dart';
@@ -74,6 +77,9 @@ abstract final class QRoutes {
 
   static const favorites = '/favorites';
   static const wallet = '/wallet';
+  static const loyalty = '/loyalty';
+  static const referral = '/referral';
+  static const orderChat = '/orders/chat';
   static const notifications = '/notifications';
   static const support = '/support';
   static const raiseTicket = '/support/new';
@@ -127,6 +133,12 @@ GoRouter buildRouter({bool isLoggedIn = false}) => GoRouter(
           ],
         ),
 
+        GoRoute(
+          path: QRoutes.orderChat,
+          builder: (_, state) => OrderChatScreen(orderId: state.extra as String? ?? ''),
+        ),
+        GoRoute(path: QRoutes.loyalty, builder: (_, __) => const LoyaltyScreen()),
+        GoRoute(path: QRoutes.referral, builder: (_, __) => const ReferralScreen()),
         GoRoute(path: QRoutes.cart, builder: (_, __) => const CartScreen()),
         GoRoute(path: QRoutes.checkout, builder: (_, __) => const CheckoutScreen()),
         GoRoute(path: QRoutes.paymentMethods, builder: (_, __) => const PaymentMethodScreen()),

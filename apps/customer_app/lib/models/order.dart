@@ -1,5 +1,6 @@
 // الطلب + الكابتن + الكوبون + طريقة الدفع + الإشعار — موديلات العرض.
 import '../core/enums.dart';
+import '../core/format.dart';
 import 'address.dart';
 
 class Order {
@@ -33,7 +34,28 @@ class Order {
     this.rating,
     this.checkoutUrl,
     this.paymentStatus,
+    this.tipAmount = 0,
+    this.scheduledFor,
+    this.awaitingRelease = false,
   });
+
+  /// إكرامية المندوب — برّه الإجمالي، بتتضاف على المبلغ المدفوع.
+  final double tipAmount;
+
+  /// وقت التسليم المطلوب لو الطلب مجدول. null = طلب فوري.
+  final DateTime? scheduledFor;
+
+  /// مجدول ولسه ماوصلش المطعم — بنعرض «مجدول» مش «بانتظار قبول المطعم»،
+  /// وإلا العميل يفتكر إن فيه مشكلة في طلب لبكرة.
+  final bool awaitingRelease;
+
+  /// الاسم المعروض للحالة.
+  ///
+  /// الطلب المجدول اللي لسه ماوصلش المطعم حالته `PENDING`، واسمها «طلب جديد» —
+  /// اللي بيخلّي عميل جادول لبكرة يفتكر إن طلبه معلّق. فبنعرض وقت التسليم بدلها.
+  String get statusLabel => awaitingRelease && scheduledFor != null
+      ? 'مجدول · ${scheduleLabel(scheduledFor!)}'
+      : status.ar;
 
   final String id;
 
@@ -165,6 +187,9 @@ class Order {
       rating: (json['review']?['restaurantStars'] as num?)?.toInt(),
       checkoutUrl: json['checkoutUrl'] as String?,
       paymentStatus: json['paymentStatus'] as String?,
+      tipAmount: (json['tipAmount'] as num?)?.toDouble() ?? 0,
+      scheduledFor: _parseDate(json['scheduledFor']),
+      awaitingRelease: json['awaitingRelease'] as bool? ?? false,
     );
   }
 
@@ -503,3 +528,23 @@ String _dayLabel(DateTime dt) {
 
 /// «اليوم 8:47 PM»
 String _stampLabel(DateTime dt) => '${_dayLabel(dt)} ${_timeLabel(dt)}';
+
+/// «غداً ٢:٣٠ م» — تسمية مختصرة لوقت تسليم مجدول.
+/// عامة عشان شاشة إتمام الطلب وقائمة الطلبات يستخدموا نفس الصيغة.
+String scheduleLabel(DateTime at) {
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final day = DateTime(at.year, at.month, at.day);
+  final diff = day.difference(today).inDays;
+
+  final dayLabel = switch (diff) {
+    0 => 'اليوم',
+    1 => 'غداً',
+    _ => '${at.day}/${at.month}',
+  };
+
+  final hour12 = at.hour % 12 == 0 ? 12 : at.hour % 12;
+  final minute = at.minute.toString().padLeft(2, '0');
+  final period = at.hour < 12 ? 'ص' : 'م';
+  return '$dayLabel ${ltr('$hour12:$minute')} $period';
+}

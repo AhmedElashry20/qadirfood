@@ -33,7 +33,7 @@ class LiveTrackingScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: QColors.canvas,
       body: tracking.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: QColors.brand)),
+        loading: () => Center(child: CircularProgressIndicator(color: QColors.brand)),
         error: (e, _) => _ErrorView(
           message: e is ApiException ? e.message : 'تعذّر تحميل تتبع الطلب',
           onRetry: () => ref.invalidate(orderTrackingProvider(orderId)),
@@ -93,9 +93,9 @@ class _TrackingView extends StatelessWidget {
           alignment: Alignment.bottomCenter,
           child: Container(
             width: double.infinity,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: QColors.surface,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(QRadius.sheet)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(QRadius.sheet)),
               boxShadow: kFloatShadow,
             ),
             padding: EdgeInsets.fromLTRB(
@@ -122,7 +122,7 @@ class _TrackingView extends StatelessWidget {
                 OrderStatusStepper(status: t.status),
                 if (captain != null) ...[
                   const SizedBox(height: QSpace.gapLg),
-                  _CaptainCard(captain: captain!),
+                  _CaptainCard(captain: captain!, orderId: orderId),
                 ] else if (!delivered) ...[
                   const SizedBox(height: QSpace.gapLg),
                   const _NoCaptainCard(),
@@ -151,7 +151,7 @@ class _EtaPill extends StatelessWidget {
   final int minutes;
   final bool delivered;
 
-  static const _text = TextStyle(
+  static final _text = TextStyle(
     fontFamily: 'Cairo',
     fontSize: 13,
     fontWeight: FontWeight.w800,
@@ -163,12 +163,12 @@ class _EtaPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: QColors.ink,
+        color: QColors.inkSurface,
         borderRadius: BorderRadius.circular(QRadius.pill),
         boxShadow: kCardShadow,
       ),
       child: delivered
-          ? const Text('✓ تم التوصيل', style: _text)
+          ? Text('✓ تم التوصيل', style: _text)
           : Text.rich(
               TextSpan(
                 children: [
@@ -188,9 +188,12 @@ class _EtaPill extends StatelessWidget {
 
 /// كارت الكابتن: صورة + تقييم + اتصال/محادثة.
 class _CaptainCard extends StatelessWidget {
-  const _CaptainCard({required this.captain});
+  const _CaptainCard({required this.captain, required this.orderId});
 
   final Captain captain;
+
+  /// محتاجينه لفتح المحادثة — الرسايل مربوطة بالطلب مش بالمندوب.
+  final String orderId;
 
   @override
   Widget build(BuildContext context) {
@@ -208,7 +211,7 @@ class _CaptainCard extends StatelessWidget {
             width: 48,
             height: 48,
             alignment: Alignment.center,
-            decoration: const BoxDecoration(color: QColors.ink, shape: BoxShape.circle),
+            decoration: BoxDecoration(color: QColors.inkSurface, shape: BoxShape.circle),
             child: Text(
               captain.initial,
               style: QText.num(size: 17, weight: FontWeight.w800, color: QColors.brand),
@@ -223,7 +226,7 @@ class _CaptainCard extends StatelessWidget {
                   '${captain.name} — كابتن التوصيل',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Cairo',
                     fontSize: 14.5,
                     fontWeight: FontWeight.w800,
@@ -242,7 +245,7 @@ class _CaptainCard extends StatelessWidget {
                         ' · ${captain.vehicle}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Cairo',
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -269,7 +272,7 @@ class _CaptainCard extends StatelessWidget {
           _CircleAction(
             emoji: '💬',
             color: QColors.chip,
-            onTap: () => _snack(context, 'قريباً'),
+            onTap: () => context.push(QRoutes.orderChat, extra: orderId),
           ),
         ],
       ),
@@ -295,11 +298,11 @@ class _NoCaptainCard extends StatelessWidget {
             width: 48,
             height: 48,
             alignment: Alignment.center,
-            decoration: const BoxDecoration(color: QColors.chip, shape: BoxShape.circle),
+            decoration: BoxDecoration(color: QColors.chip, shape: BoxShape.circle),
             child: const Text('🛵', style: TextStyle(fontSize: 20)),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Text(
               'جاري تعيين كابتن…',
               style: TextStyle(
@@ -381,7 +384,7 @@ void _snack(BuildContext context, String message) {
       SnackBar(
         content: Text(message, style: QText.body.copyWith(color: QColors.brand)),
         behavior: SnackBarBehavior.floating,
-        backgroundColor: QColors.ink,
+        backgroundColor: QColors.inkSurface,
         duration: const Duration(seconds: 3),
       ),
     );

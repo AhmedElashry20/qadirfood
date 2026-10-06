@@ -212,7 +212,7 @@ const PAGE_SIZE = 25;
 
 // ────────────────────────────────────────────────────────────
 // تصدير CSV — من الصفوف المحمّلة فعلاً، مش من السيرفر
-// (مافيش endpoint تصدير — فالتصدير بيغطي الصفحة الحالية بس)
+// (لا يوجد endpoint تصدير — فالتصدير بيغطي الصفحة الحالية بس)
 // ────────────────────────────────────────────────────────────
 
 const CSV_HEADERS = ['رقم الطلب', 'التاريخ', 'العميل', 'الهاتف', 'المطعم', 'الكابتن', 'الإجمالي', 'الدفع', 'الحالة'];
@@ -364,7 +364,7 @@ export default function Orders() {
               size="sm"
               icon="⬇"
               disabled={!rows.length}
-              title={rows.length ? 'تصدير الصفحة المعروضة' : 'مافيش صفوف للتصدير'}
+              title={rows.length ? 'تصدير الصفحة المعروضة' : 'لا توجد صفوف للتصدير'}
               onClick={() => downloadCsv(rows)}
             >
               تصدير
@@ -396,10 +396,10 @@ export default function Orders() {
                   ) : rows.length === 0 ? (
                     <EmptyState
                       icon="📦"
-                      title={search ? 'مافيش نتائج للبحث' : 'مافيش طلبات في الفلتر ده'}
+                      title={search ? 'لا توجد نتائج للبحث' : 'لا توجد طلبات في هذا الفلتر'}
                       description={
                         search
-                          ? 'البحث بيشتغل على الصفحة المعروضة بس — الـ API مافيهوش بحث نصي لسه.'
+                          ? 'يعمل البحث على الصفحة المعروضة فقط — لا يوجد بحث نصي في الـ API بعد.'
                           : 'غيّر الحالة أو المدى الزمني من الشريط العلوي.'
                       }
                     />
@@ -724,9 +724,9 @@ function refundBlockReason(payment: PaymentDetail | undefined, error: string | n
   if (error) return error;
   if (!payment) return null;
 
-  if (payment.status === 'PENDING') return 'الطلب لسه مادفعش — الاسترداد بيشتغل بعد التحصيل بس.';
-  if (payment.status === 'FAILED') return 'عملية الدفع فشلت — مافيش مبلغ محصّل يترد.';
-  if (payment.refundableAmount <= 0) return 'مافيش باقي يترد — الطلب اترد بالكامل.';
+  if (payment.status === 'PENDING') return 'الطلب لم يُدفَع بعد — الاسترداد يعمل بعد التحصيل فقط.';
+  if (payment.status === 'FAILED') return 'فشلت عملية الدفع — لا يوجد مبلغ محصَّل للاسترداد.';
+  if (payment.refundableAmount <= 0) return 'لا يوجد باقٍ للاسترداد — استُرد الطلب بالكامل.';
 
   return null;
 }
@@ -944,7 +944,7 @@ function RefundModal({ open, payment, orderCommission, hasCaptain, onClose, onDo
     if (!liability) {
       setLocalError({
         field: 'liability',
-        message: 'اختار مين يتحمّل الاسترداد — ده بيحدد رجوع العمولة والخصم من الكابتن',
+        message: 'اختر من يتحمّل الاسترداد — هذا يحدّد رجوع العمولة والخصم من الكابتن',
       });
       return;
     }
@@ -1006,7 +1006,7 @@ function RefundModal({ open, payment, orderCommission, hasCaptain, onClose, onDo
           <Fact label="المحصّل">
             <Money value={payment.total} size="sm" />
           </Fact>
-          <Fact label="المسترد قبل كده">
+          <Fact label="المسترد مسبقاً">
             <Money value={payment.refundedTotal} size="sm" />
           </Fact>
           <Fact label="الباقي القابل للاسترداد">
@@ -1045,9 +1045,9 @@ function RefundModal({ open, payment, orderCommission, hasCaptain, onClose, onDo
 
         {/* ── مين يتحمّل ── */}
         <Field
-          label="مين يتحمّل الاسترداد"
+          label="من يتحمّل الاسترداد"
           required
-          hint={liabilityMeta ? undefined : 'مافيش اختيار افتراضي — كل قيمة بتحرّك فلوس بشكل مختلف.'}
+          hint={liabilityMeta ? undefined : 'لا يوجد اختيار افتراضي — كل قيمة تحرّك المبالغ بشكل مختلف.'}
           error={localError?.field === 'liability' ? localError.message : null}
         >
           <div role="radiogroup" aria-label="جهة تحمّل الاسترداد" className="flex flex-col gap-1.5">

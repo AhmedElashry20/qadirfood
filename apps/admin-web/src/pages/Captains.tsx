@@ -119,7 +119,7 @@ const FREELANCE = '__freelance__';
 const INDEPENDENT_AR = 'مستقل';
 
 // ────────────────────────────────────────────────────────────
-// تصدير CSV — من الصفحة المحمّلة بس (مافيش endpoint تصدير)
+// تصدير CSV — من الصفحة المحمّلة بس (لا يوجد endpoint تصدير)
 // ────────────────────────────────────────────────────────────
 
 const CSV_HEADERS = [
@@ -299,7 +299,7 @@ export default function Captains() {
               size="sm"
               icon="⬇"
               disabled={!rows.length}
-              title={rows.length ? 'تصدير الصفحة المعروضة' : 'مافيش صفوف للتصدير'}
+              title={rows.length ? 'تصدير الصفحة المعروضة' : 'لا توجد صفوف للتصدير'}
               onClick={() => downloadCsv(rows)}
             >
               تصدير
@@ -331,10 +331,10 @@ export default function Captains() {
                   ) : rows.length === 0 ? (
                     <EmptyState
                       icon="🛵"
-                      title={search ? 'مافيش نتائج للبحث' : 'مافيش كباتن في الفلتر ده'}
+                      title={search ? 'لا توجد نتائج للبحث' : 'لا يوجد كباتن في هذا الفلتر'}
                       description={
                         search
-                          ? 'البحث بيشتغل على الاسم والجوال ورقم اللوحة ورقم الهوية.'
+                          ? 'يعمل البحث على الاسم والجوال ورقم اللوحة ورقم الهوية.'
                           : 'غيّر فلتر الحالة من الشريط العلوي.'
                       }
                     />
@@ -605,10 +605,10 @@ function CaptainDrawer({ captainId, onClose }: CaptainDrawerProps) {
           {/* ── إجراءات لسه مش متاحة ── */}
           <div className="flex flex-col gap-2 border-t border-hair pt-3">
             <div className="flex gap-2">
-              <Button variant="danger" size="sm" block disabled title="مافيش endpoint لحظر أو إيقاف كابتن">
+              <Button variant="danger" size="sm" block disabled title="لا يوجد endpoint لحظر أو إيقاف كابتن">
                 حظر
               </Button>
-              <Button variant="outline" size="sm" block disabled title="مافيش endpoint لفئات/مستويات الكباتن">
+              <Button variant="outline" size="sm" block disabled title="لا يوجد endpoint لفئات/مستويات الكباتن">
                 تعديل الفئة
               </Button>
             </div>

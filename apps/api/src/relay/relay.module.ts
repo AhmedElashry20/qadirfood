@@ -43,14 +43,14 @@ export class RelayService {
   async arrive(user: AuthUser, orderId: string, dto: ArriveDto) {
     const order = await this.prisma.order.findUnique({ where: { id: orderId } });
     if (!order) throw new NotFoundException('الطلب غير موجود');
-    if (order.captainId !== user.captainId) throw new ForbiddenException('الطلب ده مش مسند لك');
-    if (!order.requiresRelay) throw new BadRequestException('الطلب ده مش محتاج تسليم بالتناوب');
+    if (order.captainId !== user.captainId) throw new ForbiddenException('هذا الطلب غير مُسنَد إليك');
+    if (!order.requiresRelay) throw new BadRequestException('هذا الطلب لا يحتاج تسليماً بالتناوب');
 
     // منطقة الحرم الخاصة بوجهة الطلب.
     const dropPoint = await this.prisma.getPoint('addresses', 'location', order.addressId);
     const zone = dropPoint ? await this.zones.zoneForPoint(dropPoint.lat, dropPoint.lng) : null;
     if (!zone || zone.type !== ZoneType.HARAM) {
-      throw new BadRequestException('وجهة الطلب مش داخل منطقة حرم');
+      throw new BadRequestException('وجهة الطلب ليست داخل منطقة حرم');
     }
 
     // مندوب مشي متاح داخل منطقة الحرم دي.
@@ -116,7 +116,7 @@ export class RelayService {
   async confirm(user: AuthUser, orderId: string, dto: ConfirmDto) {
     const handoff = await this.prisma.relayHandoff.findUnique({ where: { orderId } });
     if (!handoff) throw new NotFoundException('لا توجد عملية تسليم لهذا الطلب');
-    if (handoff.toCaptainId !== user.captainId) throw new ForbiddenException('التسليم ده مش ليك');
+    if (handoff.toCaptainId !== user.captainId) throw new ForbiddenException('هذا التسليم ليس مخصّصاً لك');
     if (handoff.status === RelayStatus.CONFIRMED) throw new BadRequestException('تم التأكيد بالفعل');
     // كود التسليم — مندوب المركبة بيقوله لمندوب المشي، اللي بيدخّله هنا. إثبات
     // إنهم اتقابلوا فعلاً عند نقطة الالتقاء.

@@ -64,9 +64,9 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
       builder: (dialogContext) => AlertDialog(
         backgroundColor: QColors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(QRadius.xl)),
-        title: const Text('حذف الحساب', style: QText.section),
+        title: Text('حذف الحساب', style: QText.section),
         content: Text(
-          'متأكد إنك عايز تحذف «${method.label}»؟',
+          'هل تريد حذف «${method.label}»؟',
           style: QText.bodyMuted,
         ),
         actions: [
@@ -116,7 +116,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
             children: [
               const SizedBox(height: 80),
               QErrorView(
-                message: error is ApiException ? error.message : 'مش قادرين نجيب بياناتك',
+                message: error is ApiException ? error.message : 'تعذّر تحميل بياناتك',
                 onRetry: () => ref.invalidate(captainProvider),
               ),
             ],
@@ -141,7 +141,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
         children: [
           const SizedBox(height: 80),
           QErrorView(
-            message: error is ApiException ? error.message : 'مش قادرين نجيب المحفظة',
+            message: error is ApiException ? error.message : 'تعذّر تحميل المحفظة',
             onRetry: () => ref.invalidate(walletProvider),
           ),
         ],
@@ -182,13 +182,13 @@ class _BalanceCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
       decoration: BoxDecoration(
-        color: QColors.ink,
+        color: QColors.inkSurface,
         borderRadius: BorderRadius.circular(QRadius.xl),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'رصيد المحفظة',
             style: TextStyle(
               fontFamily: 'Cairo',
@@ -200,7 +200,7 @@ class _BalanceCard extends StatelessWidget {
           const SizedBox(height: 6),
           QPrice(value: wallet.balance, size: 30, color: Colors.white),
           const SizedBox(height: 16),
-          const Divider(color: QColors.inkLine, height: 1),
+          Divider(color: QColors.inkLine, height: 1),
           const SizedBox(height: 14),
           Row(
             children: [
@@ -224,7 +224,7 @@ class _BalanceCard extends StatelessWidget {
           if (wallet.hasPending) ...[
             const SizedBox(height: 12),
             Text(
-              'المبلغ المحجوز لسه في رصيدك — بيتخصم بعد موافقة الإدارة',
+              'المبلغ المحجوز لا يزال في رصيدك — يُخصم بعد موافقة الإدارة',
               style: QText.tiny.copyWith(
                 fontSize: 11,
                 color: QColors.darkFooter,
@@ -253,7 +253,7 @@ class _MiniStat extends StatelessWidget {
         const SizedBox(height: 3),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Cairo',
             fontSize: 11.5,
             fontWeight: FontWeight.w700,
@@ -286,7 +286,7 @@ class _CompanyDistributionsView extends ConsumerWidget {
         children: [
           const SizedBox(height: 80),
           QErrorView(
-            message: error is ApiException ? error.message : 'مش قادرين نجيب توزيعات الشركة',
+            message: error is ApiException ? error.message : 'تعذّر تحميل توزيعات الشركة',
             onRetry: () => ref.invalidate(distributionsProvider),
           ),
         ],
@@ -302,7 +302,7 @@ class _CompanyDistributionsView extends ConsumerWidget {
             const QCard(
               padding: EdgeInsets.symmetric(vertical: 12),
               child: QEmpty(
-                message: 'لسه مفيش توزيعات — أول ما شركتك تتحاسب هتبان هنا',
+                message: 'لا توجد توزيعات بعد — ستظهر هنا بمجرد محاسبة شركتك',
                 emoji: '🏢',
               ),
             )
@@ -312,7 +312,7 @@ class _CompanyDistributionsView extends ConsumerWidget {
               child: Column(
                 children: [
                   for (var i = 0; i < data.distributions.length; i++) ...[
-                    if (i != 0) const Divider(color: QColors.line, height: 1),
+                    if (i != 0) Divider(color: QColors.line, height: 1),
                     _DistributionRow(dist: data.distributions[i]),
                   ],
                 ],
@@ -321,7 +321,7 @@ class _CompanyDistributionsView extends ConsumerWidget {
           const SizedBox(height: 14),
           // تنويه أمانة: دي أرقام الشركة، مش حركة على المنصة.
           Text(
-            'التوزيعات دي بتوضّح اللي شركتك سجّلته مستحق أو مدفوع ليك. تحويل الفلوس '
+            'تُوضّح هذه التوزيعات ما سجّلته شركتك مستحقاً أو مدفوعاً لك. وتحويل المبالغ '
             'الفعلي بيتم بين الشركة وبينك برّه المنصة.',
             style: QText.tiny.copyWith(fontSize: 11, color: QColors.faint, fontWeight: FontWeight.w600),
           ),
@@ -344,13 +344,13 @@ class _CompanyHeaderCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
       decoration: BoxDecoration(
-        color: QColors.ink,
+        color: QColors.inkSurface,
         borderRadius: BorderRadius.circular(QRadius.xl),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'أرباحك عن طريق',
             style: TextStyle(
               fontFamily: 'Cairo',
@@ -362,7 +362,7 @@ class _CompanyHeaderCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             companyName,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Cairo',
               fontSize: 22,
               fontWeight: FontWeight.w900,
@@ -370,8 +370,8 @@ class _CompanyHeaderCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          const Text(
-            'شركتك هي اللي بتدفعلك — مش المنصة. عشان كده مافيش محفظة ولا سحب من هنا؛ '
+          Text(
+            'شركتك هي التي تدفع لك، لا المنصة. لذلك لا توجد محفظة ولا سحب من هنا؛ '
             'المنصة بتحاسب شركتك وهي بتوزّع عليك.',
             style: TextStyle(
               fontFamily: 'Cairo',
@@ -382,7 +382,7 @@ class _CompanyHeaderCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          const Divider(color: QColors.inkLine, height: 1),
+          Divider(color: QColors.inkLine, height: 1),
           const SizedBox(height: 14),
           Row(
             children: [
@@ -425,7 +425,7 @@ class _DarkMoneyStat extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Cairo',
             fontSize: 11.5,
             fontWeight: FontWeight.w700,
@@ -579,7 +579,7 @@ class _PayoutMethodsSection extends StatelessWidget {
                   color: QColors.brand,
                   borderRadius: BorderRadius.circular(QRadius.pill),
                 ),
-                child: const Text(
+                child: Text(
                   '+ إضافة حساب',
                   style: TextStyle(
                     fontFamily: 'Cairo',
@@ -596,7 +596,7 @@ class _PayoutMethodsSection extends StatelessWidget {
         if (methods.isEmpty)
           const QCard(
             padding: EdgeInsets.symmetric(vertical: 12),
-            child: QEmpty(message: 'مافيش حسابات — ضيف حساب عشان تقدر تسحب', emoji: '🏦'),
+            child: QEmpty(message: 'لا توجد حسابات — أضف حساباً لتتمكّن من السحب', emoji: '🏦'),
           )
         else
           QTileGroup(
@@ -618,8 +618,8 @@ class _PayoutMethodsSection extends StatelessWidget {
                       InkWell(
                         onTap: () => onDelete(method),
                         borderRadius: BorderRadius.circular(QRadius.sm),
-                        child: const Padding(
-                          padding: EdgeInsets.all(6),
+                        child: Padding(
+                          padding: const EdgeInsets.all(6),
                           child: Icon(Icons.delete_outline, size: 19, color: QColors.danger),
                         ),
                       ),
@@ -686,7 +686,7 @@ class _AddPayoutMethodSheetState extends ConsumerState<_AddPayoutMethodSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('إضافة حساب استلام', style: QText.section),
+              Text('إضافة حساب استلام', style: QText.section),
               const SizedBox(height: 14),
               Row(
                 children: [
@@ -760,21 +760,21 @@ class _WithdrawalsSection extends ConsumerWidget {
           ),
           error: (error, _) => QCard(
             child: Text(
-              error is ApiException ? error.message : 'مش قادرين نجيب طلبات السحب',
+              error is ApiException ? error.message : 'تعذّر تحميل طلبات السحب',
               style: QText.bodyMuted,
             ),
           ),
           data: (page) => page.data.isEmpty
               ? const QCard(
                   padding: EdgeInsets.symmetric(vertical: 12),
-                  child: QEmpty(message: 'مافيش طلبات سحب لسه', emoji: '💸'),
+                  child: QEmpty(message: 'لا توجد طلبات سحب بعد', emoji: '💸'),
                 )
               : QCard(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                   child: Column(
                     children: [
                       for (var i = 0; i < page.data.length; i++) ...[
-                        if (i != 0) const Divider(color: QColors.line, height: 1),
+                        if (i != 0) Divider(color: QColors.line, height: 1),
                         _WithdrawalRow(request: page.data[i]),
                       ],
                     ],
@@ -893,7 +893,7 @@ class _LedgerSection extends ConsumerWidget {
         if (error != null && loaded.isEmpty)
           QCard(
             child: Text(
-              error is ApiException ? error.message : 'مش قادرين نجيب الحركات',
+              error is ApiException ? error.message : 'تعذّر تحميل الحركات',
               style: QText.bodyMuted,
             ),
           )
@@ -902,7 +902,7 @@ class _LedgerSection extends ConsumerWidget {
         else if (loaded.isEmpty)
           const QCard(
             padding: EdgeInsets.symmetric(vertical: 12),
-            child: QEmpty(message: 'مافيش حركات لسه', emoji: '💳'),
+            child: QEmpty(message: 'لا توجد حركات بعد', emoji: '💳'),
           )
         else ...[
           QCard(
@@ -910,7 +910,7 @@ class _LedgerSection extends ConsumerWidget {
             child: Column(
               children: [
                 for (var i = 0; i < loaded.length; i++) ...[
-                  if (i != 0) const Divider(color: QColors.line, height: 1),
+                  if (i != 0) Divider(color: QColors.line, height: 1),
                   _TransactionRow(transaction: loaded[i]),
                 ],
               ],
@@ -1001,7 +1001,7 @@ String _relativeDate(DateTime? value) {
   if (value == null) return '—';
 
   final diff = DateTime.now().difference(value);
-  if (diff.inMinutes < 1) return 'دلوقتي';
+  if (diff.inMinutes < 1) return 'الآن';
   if (diff.inMinutes < 60) return 'من ${diff.inMinutes} دقيقة';
   if (diff.inHours < 24) return 'من ${diff.inHours} ساعة';
   if (diff.inDays < 30) return 'من ${diff.inDays} يوم';
@@ -1013,7 +1013,7 @@ void _snack(BuildContext context, String message) {
     ..hideCurrentSnackBar()
     ..showSnackBar(
       SnackBar(
-        backgroundColor: QColors.ink,
+        backgroundColor: QColors.inkSurface,
         behavior: SnackBarBehavior.floating,
         content: Text(
           message,
